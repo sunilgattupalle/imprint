@@ -1,37 +1,36 @@
 # 02 — Corpus Hygiene, Deduplication & Authorship Purification
 
-Raw `role = 'user'` rows in coding-agent databases are heavily contaminated. Before any extraction runs, `pipeline/build_corpus.py` applies four deterministic hygiene stages.
+Raw `role = 'user'` rows in coding-agent databases contain cross-store duplicates and machine-injected envelopes. Before synthesis runs, `imprint digest <instance>` executes four deterministic hygiene stages in `internal/corpus`.
 
 ---
 
 ## Stage 1: Cross-Store Session Deduplication & Metadata Merging
 
-When a collector indexes both an IDE state database (e.g., Cursor's `state.vscdb` under `agent = 'cursor-ide'`) and on-disk project transcripts (`~/.cursor/projects/.../agent-transcripts/` under `agent = 'cursor'`), **90–95%+ of sessions share the exact same UUID**.
-
-- `cursor-ide` often has slightly fuller message history (including terminal/tool outputs) but lacks the project name (`project = 'unassigned'`).
-- `cursor` has the resolved `project`, `cwd`, and `git_branch` from the project directory path.
+When AgentsView indexes both an IDE state database (e.g., Cursor's `state.vscdb` under `agent = 'cursor-ide'`) and on-disk project transcripts (`~/.cursor/projects/.../agent-transcripts/` under `agent = 'cursor'`), **90–95%+ of sessions share the exact same UUID**:
+- `cursor-ide` holds fuller message history but often lacks project metadata (`project = 'unassigned'`).
+- `cursor` carries the resolved `project`, `cwd`, and `git_branch` from the workspace path.
 
 **Rule:** Group all sessions by normalized `raw_uuid` (stripping the `<agent>:` prefix). When the same UUID appears in both `cursor-ide` and `cursor`:
-1. Merge `project`, `cwd`, and `git_branch` from `cursor` onto the richer transcript.
-2. Keep **one** canonical session record so every human turn is counted once.
+1. Merge `project`, `cwd`, and `git_branch` from `cursor` onto the `cursor-ide` record.
+2. Emit **one** canonical session so every human turn is counted once.
 
 ---
 
 ## Stage 2: Authorship Purification (Stripping Non-Human `user` Turns)
 
-Agent harnesses frequently inject machine payloads into `role = 'user'` messages. A turn is **dropped** if it matches any of the following (plus any instance-configured `extra_reject_regexes`):
+Agent harnesses frequently inject machine payloads into `role = 'user'` messages. A turn is rejected if it matches any of the built-in or instance-configured reject rules:
 
-1. **Subagent / worker reports:** starts with `<worker>`, `<teammate-message`, `<task-notification>`, or `[Subagent Context]`.
-2. **Webhook / event bus payloads:** starts with event envelope tags or raw webhook JSON payloads.
-3. **CLI harness / slash scaffolding:** starts with `<local-command-caveat>`, `<command-name>`, `<command-message>`, `/login`, `/clear`, `/compact`, `/mcp`, `/model`, or `Use ultraplan`.
+1. **Subagent / worker reports:** starts with `<worker`, `<teammate-message`, `<task-notification`, or `[Subagent Context]`.
+2. **Webhook / event bus envelopes:** starts with `<cosmos-events` or custom event tags configured in `hygiene.extra_reject_patterns`.
+3. **CLI harness / slash scaffolding:** starts with `<local-command-caveat`, `<command-name`, `<command-message`, `/login`, `/clear`, `/compact`, `/mcp`, `/model`, or `Use ultraplan`.
 4. **System reminders:** inline `<system-reminder>...</system-reminder>` blocks are stripped before length and content checks.
-5. **Pure log / stack-trace dumps:** turns where >75% of lines are stack frames, timestamps, or raw JSON/log pastes with no human directive sentence.
+5. **Pure log / stack-trace dumps:** turns with ≥6 non-empty lines where >75% of lines are stack frames or timestamped log lines with no human directive.
 
 ---
 
 ## Stage 3: Conversational Triple Construction
 
-A user turn like *"no, don't do that — keep it simple"* is meaningless without what the assistant just did. Every surviving user turn is emitted as a **conversational triple**:
+Every surviving user turn is paired with its surrounding assistant context and written to `.local/corpus/{train_turns,holdout_turns}.jsonl`:
 
 ```json
 {
@@ -39,9 +38,10 @@ A user turn like *"no, don't do that — keep it simple"* is meaningless without
   "agent": "claude",
   "project": "project_alpha",
   "ordinal": 63,
-  "prev_assistant_snippet": "...assistant text/action that triggered the user...",
-  "user_text": "'load-bearing' is such an overused AI term. think honestly and genuinely...",
-  "next_assistant_snippet": "...how the assistant adapted..."
+  "prev_assistant_snippet": "...assistant text that triggered the user...",
+  "user_text": "'load-bearing' is an overused AI term. Write it plainly...",
+  "next_assistant_snippet": "...how the assistant adapted...",
+  "split": "train"
 }
 ```
 
@@ -49,6 +49,6 @@ A user turn like *"no, don't do that — keep it simple"* is meaningless without
 
 ## Stage 4: Deterministic 80/20 Session-Level Holdout Split
 
-To prevent overfitting, sessions are split at the **canonical `raw_uuid` level** using `SHA256(raw_uuid) % 100 < 20`:
-- **`train_turns.jsonl` (80% of sessions):** used to discover, cluster, and graduate Imprint claims.
-- **`holdout_turns.jsonl` (20% of sessions):** untouched during extraction; used in `05-evaluation.md` to test whether the graduated Imprint predicts the user's actual interventions in unseen sessions.
+Sessions are split at the **canonical `raw_uuid` level** using `SHA256(raw_uuid)[:4] % 1000 < holdout_ratio * 1000`:
+- **`.local/corpus/train_turns.jsonl` (80% of sessions):** clustered into `.local/corpus/digest.md` to synthesize and graduate Imprint claims.
+- **`.local/corpus/holdout_turns.jsonl` (20% of sessions):** untouched during synthesis; scored by `imprint eval <instance>` to measure held-out coverage.

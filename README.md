@@ -1,54 +1,113 @@
 # Imprint Model (`imprint-model`)
 
-**Imprint** is a local-first model, Go CLI (`imprint`), and Agent Skill (`SKILL.md`) for distilling how a specific builder thinks, argues, writes, structures information, and delegates risk from their coding-agent sessions (via [AgentsView](https://github.com/wesm/agentsview)) and authored manuscripts.
+> Blueprint and Go CLI to build a portable imprint of a person—carrying their judgment, taste, and voice into any AI tool as it is used.
 
-This repository contains **only the person-agnostic model, schemas, Go CLI, and `SKILL.md`**. It contains zero personal or company data. A person's instance lives in a separate directory with a hard two-zone privacy boundary (`.local/` for raw data and verbatim quotes; root for the sanitized, portable imprint).
+Most "personalization" files mix three unrelated things into one prompt: **who the person is**, **company-specific repo conventions**, and **generic workarounds for LLM bugs**. The result cannot leave the repo it was written in and degrades whenever the task changes.
+
+`imprint-model` separates those layers, mines evidence from local coding-agent archives ([AgentsView](https://github.com/wesm/agentsview)) plus authored work, and compiles a ~600-token `IMPRINT.md` and task overlays that travel across tools and workspaces.
 
 ---
 
-## 1. Install the `imprint` Go CLI
+## 1. The Construct
 
-```bash
-go install github.com/sunilgattupalle/imprint-model/cmd/imprint@latest
-# or from a local clone:
-go build -o ~/.local/bin/imprint ./cmd/imprint
+### Three Layers (Only L1 Is the Imprint)
+
+| Layer | Definition | Destination |
+|---|---|---|
+| **L1. Personal Imprint** | Portable cognitive, dialectical, structural, stylistic, and delegation traits of **the person** across any workspace | `<instance>/IMPRINT.md`, `imprint.json`, `overlays/` (tracked) |
+| **L2. Workspace Bindings** | How that imprint binds to a **specific company, stack, or repo** | `<instance>/.local/WORKSPACE.md` (gitignored) |
+| **L3. Agent Baseline** | Universal competence **every** engineer expects (e.g., verify before claiming done) | `<instance>/.local/demoted_non_imprint.json` (excluded from imprint) |
+
+### Two Admission Gates
+
+A candidate rule enters **L1** only if it passes both gates and records its counter-evidence boundary:
+
+1. **Portability Gate (`portability_check`):** Still holds if the person switches companies or works on an open-source repo tomorrow. Zero company/workspace proper nouns may appear in any exported field.
+2. **Non-Trivial Fork Gate (`peer_fork`):** Another strong, reasonable engineer would legitimately prefer the opposite. If no reasonable peer would prefer the opposite, it is **L3 Agent Baseline**, not personal imprint.
+3. **Flip Boundary (`flips_when`):** Every rule states the exact condition where the person intentionally inverts it (e.g., terse in chat and executive summaries vs. never compressing away reasoning in deep evaluations).
+
+### Five Portable Facets
+
+| Facet | Question it answers |
+|---|---|
+| **`F1_epistemic_posture`** | How does this person decide what is true, well-abstracted, and properly evaluated? |
+| **`F2_dialectical_style`** | When should the agent challenge vs. execute, and how are disagreements resolved? |
+| **`F3_compression_and_structure`** | Where does this person want extreme compression vs. full analytical depth, and how are documents structured? |
+| **`F4_voice_and_visuals`** | What sentence cadence, vocabulary, visual hierarchy, and diagram medium match their hand? |
+| **`F5_delegation_and_risk`** | Which actions are autonomous, which require human sign-off, and how are long-running tasks coordinated? |
+
+---
+
+## 2. Two-Zone Privacy Boundary
+
+An imprint instance directory enforces a hard split between raw local evidence and portable output:
+
+```text
+<instance>/
+├── .gitignore                 # Ignores .local/
+├── IMPRINT.md                 # Always-on portable imprint (~500–650 tokens)
+├── imprint.json               # Validated L1 claims (aggregate counts only, zero quotes/UUIDs)
+├── overlays/                  # Loaded on demand by task genre
+│   ├── mode-architecture-and-specs.md
+│   ├── mode-exec-memos-and-decks.md
+│   ├── mode-visual-html-and-prototypes.md
+│   ├── mode-coding-and-prs.md
+│   └── mode-autonomous-orchestration.md
+└── .local/                    # Gitignored — never leaves the machine
+    ├── sources.yaml           # Local DB paths, authored file globs, disallowed workspace terms
+    ├── authored/              # Remote docs/decks fetched via MCP
+    ├── corpus/                # Deduplicated train/holdout JSONL + synthesis digest.md
+    ├── evidence_ledger.json   # Full claims with verbatim quotes & session UUIDs
+    ├── demoted_non_imprint.json
+    ├── WORKSPACE.md           # L2 company/repo bindings
+    └── eval/                  # 20% holdout evaluation report
 ```
 
 ---
 
-## 2. How the CLI (`imprint`) and Agent Skill (`SKILL.md`) Work Together
+## 3. CLI & Agent Workflow
 
-Building an imprint splits cleanly across a **deterministic data plane** (`imprint` Go CLI) and a **synthesis plane** (`SKILL.md` executed by the user's own coding agent):
+Install the CLI:
 
-| Step | Command / Actor | What it does |
-|---|---|---|
-| **1. Initialize** | `imprint init <dir> [--sync]` | Creates `<dir>/.local/` (gitignored), wires `~/.agentsview/config.toml` (including `~/.augment/sessions-v2` if present), labels `source=auggie` sessions in SQLite, and auto-discovers local `CLAUDE.md`/`style.md` priors. |
-| **2. Add Sources** | `imprint add <dir> --authored ... --chats ... --disallow-term ...` | Registers user-authored ground-truth artifacts (`.md`, `.txt`, `.docx`, `.pptx`, `.html`), exported web chat `.json` files, and workspace terms that must not leak into the portable imprint. Remote Confluence/Notion docs are fetched by the agent via MCP into `<dir>/.local/authored/`. |
-| **3. Build Digest** | `imprint digest <dir>` | Deduplicates cross-store session UUIDs (e.g., Cursor `state.vscdb` vs. JSONL transcripts), strips `<worker>` / event-envelope payloads from `role=user`, splits sessions 80/20 into `train` and `holdout`, extracts text/CSS tokens from `.docx`/`.pptx`/`.html`/`.md`, and writes a token-budgeted `<dir>/.local/corpus/digest.md`. |
-| **4. Synthesize** | Agent (`SKILL.md`) | Reads `.local/corpus/digest.md` and writes `.local/evidence_ledger.json` (L1 portable claims), `.local/demoted_non_imprint.json` + `.local/WORKSPACE.md` (L2 workspace bindings & L3 agent baseline), `IMPRINT.md`, and `overlays/mode-*.md`. |
-| **5. Validate & Eval** | `imprint validate <dir>`<br>`imprint eval <dir>` | Enforces **Gate 1 (Portability)** and **Gate 2 (Non-Trivial Fork)**, exports the quote-free `<dir>/imprint.json`, and evaluates coverage against the untouched 20% holdout split (`.local/eval/holdout_report.md`). |
+```bash
+go install github.com/sunilgattupalle/imprint-model/cmd/imprint@latest
+```
+
+The Go CLI handles deterministic collection, hygiene, extraction, gate enforcement, and holdout scoring. Your coding agent (guided by [`SKILL.md`](./SKILL.md)) handles source curation and claim synthesis:
+
+```bash
+# 1. Scaffold two-zone instance, wire ~/.agentsview/config.toml, discover local priors
+imprint init <instance_dir> --owner-id "<id>" --owner-name "<Name>" --sync
+
+# 2. Register authored manuscripts (.md, .txt, .docx, .pptx, .html), chat exports, and banned workspace terms
+imprint add <instance_dir> \
+  --authored "~/docs/*.md" \
+  --authored "~/decks/*.pptx" \
+  --chats "~/exports/chatgpt-*.json" \
+  --disallow-term "CompanyName"
+
+# 3. Deduplicate sessions, strip non-human role=user noise, split 80/20, and build .local/corpus/digest.md
+imprint digest <instance_dir>
+
+# 4. Agent reads .local/corpus/digest.md (per SKILL.md) and writes:
+#    .local/evidence_ledger.json, .local/WORKSPACE.md, IMPRINT.md, and overlays/
+
+# 5. Enforce Gate 1 & Gate 2, export quote-free imprint.json, and score against the 20% holdout split
+imprint validate <instance_dir>
+imprint eval <instance_dir>
+```
 
 ---
 
-## 3. The Three-Layer Separation & Two Admission Gates
+## 4. Repository Layout
 
-| Layer | What it is | Lives in |
-|---|---|---|
-| **L1. Personal Imprint** | Portable cognitive, dialectical, stylistic, and delegation traits of **the person** across any company or repo | `<instance>/IMPRINT.md`, `<instance>/imprint.json`, `<instance>/overlays/` (safe to commit) |
-| **L2. Workspace Bindings** | How that person's imprint binds to a **specific company, stack, or repo** | `<instance>/.local/WORKSPACE.md` & `.local/demoted_non_imprint.json` (gitignored) |
-| **L3. Agent Baseline** | Universal agent competence that **every** engineer expects (workarounds for model bugs) | Stripped from the person's imprint into `.local/demoted_non_imprint.json` |
-
-Every graduated L1 claim in `imprint.json` must pass:
-1. **Gate 1 — Portability Check (`portability_check`):** zero disallowed workspace/company terms in any exported field (`imprint validate` fails if a workspace term leaks).
-2. **Gate 2 — Non-Trivial Fork Check (`peer_fork`):** states what another strong, reasonable engineer would legitimately prefer instead.
-3. **Counter-Evidence Boundary (`flips_when`):** states the exact condition where the user intentionally suspends or inverts the rule.
-
----
-
-## 4. The Five Portable Facets
-
-1. **`F1_epistemic_posture`** — Computational primitives first, single source of truth, provenance labeling (`observed / interview / inferred / unknown`), rubric-before-benchmark, conservation-law unit economics.
-2. **`F2_dialectical_style`** — Adversarial stress-testing vs. flattery, lock-in flip once an axiom is set, mental model before code/formatting, cross-model red-teaming.
-3. **`F3_compression_and_structure`** — The Compression Asymmetry (terse chat/one-pagers vs. never over-compressing deep evaluations), companion-pair docs, progressive depth, capability tracks over timelines, `-v2` versioned iteration.
-4. **`F4_voice_and_visuals`** — Sentence cadence, punctuation discipline, banned AI clichés, neutral structure / semantic state colors, surface-matched diagrams (SVG in published docs vs. ASCII in chat).
-5. **`F5_delegation_and_risk`** — Risk-tiered autonomy gates, human-owned merge, author identity preservation, event-driven/webhook continuation over polling.
+- [`SKILL.md`](./SKILL.md) — Agent workflow for building or updating a personal imprint instance.
+- [`AGENTS.md`](./AGENTS.md) — Operating instructions and invariants for agents working in this repository.
+- [`cmd/imprint/`](./cmd/imprint) & [`internal/`](./internal) — Go CLI implementation (`config`, `collector`, `ingest`, `corpus`, `digest`, `gate`, `eval`).
+- [`schemas/`](./schemas) — JSON Schemas for local evidence claims (`claim.schema.json`) and exported quote-free imprints (`imprint.schema.json`).
+- [`docs/`](./docs) — Method specifications:
+  - [`01-sources.md`](./docs/01-sources.md) — Source taxonomy (`S1` session archives, `S2` authored artifacts, `S3` explicit priors)
+  - [`02-hygiene.md`](./docs/02-hygiene.md) — Cross-store UUID deduplication, `<worker>`/event purification, and 80/20 split
+  - [`03-dimensions.md`](./docs/03-dimensions.md) — The five portable facets and two admission gates
+  - [`04-extraction.md`](./docs/04-extraction.md) — Four-pass synthesis and graduation rules
+  - [`05-evaluation.md`](./docs/05-evaluation.md) — Held-out intervention coverage and maintenance loop
