@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PublicPortableImprint",
+  "description": "Sanitized, portable imprint summary safe for version control (zero verbatim session quotes, zero session UUIDs, zero internal repo/company names).",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "claims"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "facet",
+          "scope",
+          "status",
+          "title",
+          "portable_rule",
+          "admission_tests",
+          "applies_when",
+          "flips_when",
+          "provenance_counts"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^IMP-F[1-5]-[0-9]{2}$" },
+          "facet": {
+            "type": "string",
+            "enum": [
+              "F1_epistemic_posture",
+              "F2_dialectical_style",
+              "F3_compression_and_structure",
+              "F4_voice_and_visuals",
+              "F5_delegation_and_risk"
+            ]
+          },
+          "scope": { "type": "string" },
+          "status": { "type": "string", "enum": ["graduated"] },
+          "title": { "type": "string" },
+          "portable_rule": { "type": "string" },
+          "admission_tests": {
+            "type": "object",
+            "required": ["portability_check", "peer_fork"],
+            "properties": {
+              "portability_check": { "type": "string" },
+              "peer_fork": { "type": "string" }
+            }
+          },
+          "applies_when": { "type": "string" },
+          "flips_when": { "type": "string" },
+          "provenance_counts": {
+            "type": "object",
+            "required": ["evidence_items", "distinct_source_types", "distinct_projects", "counter_evidence_items"],
+            "properties": {
+              "evidence_items": { "type": "integer", "minimum": 3 },
+              "distinct_source_types": { "type": "integer", "minimum": 1 },
+              "distinct_projects": { "type": "integer", "minimum": 2 },
+              "counter_evidence_items": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
