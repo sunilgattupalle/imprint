@@ -38,8 +38,22 @@ Generating an imprint produces three lightweight artifacts that travel across ev
   @~/path/to/your-imprint/.local/WORKSPACE.md
   ```
   When starting a spec, memo, deck, or visual prototype, `@`-mention the matching file in `overlays/mode-*.md`.
-- **Augment (`auggie`) & Cursor:**
+- **Harness (`auggie`) & Cursor:**
   Add `IMPRINT.md` to your global user rules (or workspace `AGENTS.md` / `.cursor/rules`), and attach the matching `overlays/mode-*.md` when shifting into architecture, deck, or prototype work.
+- **Pi (`pi`) & Oh My Pi (`omp`):**
+  Link or include `IMPRINT.md` in `~/.pi/agent/AGENTS.md` and `~/.omp/agent/AGENTS.md` (both harnesses load their global `AGENTS.md` into every session startup context and support `@~/path/to/your-imprint/overlays/mode-*.md` in prompts).
+- **OpenCode (`opencode`):**
+  Link `IMPRINT.md` to `~/.config/opencode/AGENTS.md`, or add it to the `instructions` array in `~/.config/opencode/opencode.json`:
+  ```json
+  {
+    "instructions": [
+      "~/path/to/your-imprint/IMPRINT.md",
+      "~/path/to/your-imprint/.local/WORKSPACE.md"
+    ]
+  }
+  ```
+- **Hermes (`hermes`):**
+  Include `IMPRINT.md` in `~/.hermes/SOUL.md` (or `~/.hermes/MEMORY.md`) for global persona/judgment defaults, and copy or symlink `overlays/` as on-demand skills under `~/.hermes/skills/`.
 - **Claude Desktop (Chat / Projects) & ChatGPT:**
   Paste `IMPRINT.md` into **Settings -> Personal Preferences / Custom Instructions**, and attach specific `overlays/mode-*.md` files to individual Projects as project knowledge.
 - **Custom Agents & Evaluation Harnesses:**

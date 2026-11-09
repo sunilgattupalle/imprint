@@ -11,7 +11,7 @@ To build an accurate imprint of how a person thinks, writes, and delegates, `imp
 - **Collectors:** AgentsView SQLite archive (`~/.agentsview/sessions.db`) + exported web chat JSONs.
 - **Normalized agent ecosystems:**
   - IDE & CLI pairs (`cursor-ide` + `cursor`, `claude`, `codex`, `gemini`)
-  - Terminal harnesses (`pi`, `omp`, and Augment CLI `~/.augment/sessions-v2` labeled `source=auggie` via `session_labels`)
+  - Terminal harnesses (`pi`, `omp`, `opencode`, `hermes`, and Harness CLI `~/.augment/sessions-v2` labeled `source=auggie` via `session_labels`)
   - Autonomous background workers (`devin`, subagent forks with `parent_session_id != ''`)
   - Web reasoning threads (`chatgpt` exported JSONs)
 
