@@ -1,4 +1,4 @@
-# AGENTS.md — `imprint-model`
+# AGENTS.md: `imprint-model`
 
 This repository contains the **person-agnostic model, schemas, Go CLI (`imprint`), and Agent Skill (`SKILL.md`)** for building a portable personal imprint.
 

@@ -1,4 +1,4 @@
-# 05 — Held-Out Evaluation & Living Maintenance
+# 05: Held-Out Evaluation & Living Maintenance
 
 An imprint is useful only if it **reduces corrective turns in unseen sessions** without over-constraining the agent when the context flips.
 

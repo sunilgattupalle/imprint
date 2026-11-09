@@ -23,7 +23,7 @@ func (m *multiFlag) Set(v string) error {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `imprint — Local-first personal imprint collector, distiller, and validator
+	fmt.Fprintf(os.Stderr, `imprint: Local-first personal imprint collector, distiller, and validator
 
 Usage:
   imprint init     <instance_dir> [--owner-id <id>] [--owner-name <name>] [--sync]

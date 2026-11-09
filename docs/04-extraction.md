@@ -1,4 +1,4 @@
-# 04 — Four-Pass Synthesis & Graduation Pipeline
+# 04: Four-Pass Synthesis & Graduation Pipeline
 
 Synthesis turns `.local/corpus/digest.md` (`S1` clustered training turns, `S2` authored manuscripts, and `S3` explicit priors) into structured claims validated by `imprint validate <instance>`.
 

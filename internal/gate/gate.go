@@ -152,7 +152,7 @@ func ValidateAndExport(instanceDir string) error {
 		}, " ")
 		for idx, re := range termPatterns {
 			if re.MatchString(blob) {
-				errs = append(errs, fmt.Sprintf("%s: Gate 1 (Portability) failed — workspace term %q leaked into portable fields",
+				errs = append(errs, fmt.Sprintf("%s: Gate 1 (Portability) failed: workspace term %q leaked into portable fields",
 					c.ID, cfg.WorkspaceTermsDisallowedInPortableRules[idx]))
 			}
 		}

@@ -1,4 +1,4 @@
-# 02 — Corpus Hygiene, Deduplication & Authorship Purification
+# 02: Corpus Hygiene, Deduplication & Authorship Purification
 
 Raw `role = 'user'` rows in coding-agent databases contain cross-store duplicates and machine-injected envelopes. Before synthesis runs, `imprint digest <instance>` executes four deterministic hygiene stages in `internal/corpus`.
 

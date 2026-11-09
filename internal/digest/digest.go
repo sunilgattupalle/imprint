@@ -24,27 +24,27 @@ type facetprobe struct {
 var facetProbes = []facetprobe{
 	{
 		"F1_epistemic_posture",
-		"F1 — Epistemic Posture (Primitives, Single Source of Truth, Provenance, Rubrics, Economics)",
+		"F1: Epistemic Posture (Primitives, Single Source of Truth, Provenance, Rubrics, Economics)",
 		regexp.MustCompile(`(?i)\b(primitive|construct|first principles|source of truth|ontology|abstraction|rubric|ground truth|inferred|observed|provenance|independent doc|tok/s|cohorts?)\b`),
 	},
 	{
 		"F2_dialectical_style",
-		"F2 — Dialectical Style (Stress-Testing, Anti-Sycophancy, Mental Model Before Code, Cross-Model Critique)",
+		"F2: Dialectical Style (Stress-Testing, Anti-Sycophancy, Mental Model Before Code, Cross-Model Critique)",
 		regexp.MustCompile(`(?i)\b(don't just agree|stress test|honest|what do you think|am i conflating|mental model|let's first talk|before you implement|ask opus|opus 5|overcomplicat)\b`),
 	},
 	{
 		"F3_compression_and_structure",
-		"F3 — Compression & Structure (Compression Asymmetry, Companion Docs, Progressive Depth, -v2 Iteration)",
+		"F3: Compression & Structure (Compression Asymmetry, Companion Docs, Progressive Depth, -v2 Iteration)",
 		regexp.MustCompile(`(?i)\b(concise|no ai fluff|too concise|compressed this too much|over-?correct|write -?v\d|don't overwrite|separate slide|no timelines|different tracks|what's next)\b`),
 	},
 	{
 		"F4_voice_and_visuals",
-		"F4 — Voice & Visual Signature (CTO Prose, Banned Phrases, Color Restraint, SVG vs. ASCII)",
+		"F4: Voice & Visual Signature (CTO Prose, Banned Phrases, Color Restraint, SVG vs. ASCII)",
 		regexp.MustCompile(`(?i)\b(load-bearing|the hypothesis|write it like i would|my tone|my writing style|too many colors|glaring colors|use svg|fix all the ascii|use ascii diagrams|visually)\b`),
 	},
 	{
 		"F5_delegation_and_risk",
-		"F5 — Delegation & Risk Appetite (Governed Autonomy, Author Identity, Git Pull Main, Event-Driven Loops)",
+		"F5: Delegation & Risk Appetite (Governed Autonomy, Author Identity, Git Pull Main, Event-Driven Loops)",
 		regexp.MustCompile(`(?i)\b(autonomy|git pull on main|use my identity|sole approver|event driven|webhook|dispatches an event|come back to resume)\b`),
 	},
 }
@@ -67,7 +67,7 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	}
 
 	var md strings.Builder
-	md.WriteString(fmt.Sprintf("# Imprint Extraction Digest — %s (`%s`)\n\n", cfg.Owner.Name, cfg.Owner.ID))
+	md.WriteString(fmt.Sprintf("# Imprint Extraction Digest: %s (`%s`)\n\n", cfg.Owner.Name, cfg.Owner.ID))
 	md.WriteString("> **Local-only synthesis input (`.local/corpus/digest.md`).** Read this file to synthesize `.local/evidence_ledger.json`, `.local/demoted_non_imprint.json`, `IMPRINT.md`, and `overlays/`.\n\n")
 
 	// 1. Corpus Summary
@@ -116,7 +116,7 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	}
 
 	// 4. Clustered High-Signal Training Turns (S1)
-	md.WriteString("## 4. High-Signal Training Turns Clustered by Facet (S1 — 80% Train Split Only)\n\n")
+	md.WriteString("## 4. High-Signal Training Turns Clustered by Facet (S1, 80% Train Split Only)\n\n")
 	trainPath := filepath.Join(localDir, "corpus/train_turns.jsonl")
 	f, err := os.Open(trainPath)
 	if err != nil {

@@ -176,12 +176,12 @@ func RunHoldoutEval(instanceDir string) (*EvalResults, error) {
 	md.WriteString(fmt.Sprintf("- **High-signal directive/corrective turns in holdout (excluding JSON pastes):** %d\n", total))
 	md.WriteString(fmt.Sprintf("- **Covered by L1 Portable Imprint (`evidence_ledger.json` -> `imprint.json`):** %d / %d (**%.1f%%**)\n", coveredL1, total, 100*l1Rate))
 	md.WriteString(fmt.Sprintf("- **Covered including separated L2 Workspace & L3 Agent Baseline (`demoted_non_imprint.json`):** %d / %d (**%.1f%%**)\n\n", coveredAny, total, 100*anyRate))
-	md.WriteString("## L1 Portable Imprint Claims — Holdout Verification\n\n")
+	md.WriteString("## L1 Portable Imprint Claims: Holdout Verification\n\n")
 	md.WriteString("| Claim ID | Facet | Portable Claim | Holdout Hits | Sample Held-Out Evidence |\n")
 	md.WriteString("|---|---|---|---:|---|\n")
 	for _, c := range claims {
 		hits := l1Hits[c.ID]
-		sample := "—"
+		sample := "-"
 		if len(hits) > 0 {
 			ts := hits[0].Timestamp
 			if len(ts) >= 10 {

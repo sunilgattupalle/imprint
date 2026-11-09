@@ -51,7 +51,7 @@ This deduplicates sessions, strips non-human `role=user` turns, splits sessions 
 
 ### Step 4: Synthesize L1 Portable Claims vs. L2/L3 Local Ledger
 Read `<instance_dir>/.local/corpus/digest.md` and write:
-1. `<instance_dir>/.local/evidence_ledger.json` — Graduated **L1 Portable Imprint** claims (`IMP-F1-01` .. `IMP-F5-xx`) across the 5 facets:
+1. `<instance_dir>/.local/evidence_ledger.json`: Graduated **L1 Portable Imprint** claims (`IMP-F1-01` .. `IMP-F5-xx`) across the 5 facets:
    - `F1_epistemic_posture`
    - `F2_dialectical_style`
    - `F3_compression_and_structure`
@@ -61,7 +61,7 @@ Read `<instance_dir>/.local/corpus/digest.md` and write:
    - **Gate 1 (`portability_check`):** zero company/workspace proper nouns in `title`, `portable_rule`, `applies_when`, or `flips_when` (put company bindings in `workspace_bindings`).
    - **Gate 2 (`peer_fork`):** state what a strong peer engineer would legitimately prefer instead.
    - **Counter-evidence (`flips_when`):** state the exact boundary condition where the user inverts the rule.
-2. `<instance_dir>/.local/demoted_non_imprint.json` & `<instance_dir>/.local/WORKSPACE.md` — Separated **L2 Workspace Bindings** and **L3 Agent Baseline** rules.
+2. `<instance_dir>/.local/demoted_non_imprint.json` & `<instance_dir>/.local/WORKSPACE.md`: Separated **L2 Workspace Bindings** and **L3 Agent Baseline** rules.
 3. `<instance_dir>/IMPRINT.md` (~500–650 tokens) and `<instance_dir>/overlays/mode-*.md`.
 
 ### Step 5: Validate Gates & Run Held-Out Evaluation

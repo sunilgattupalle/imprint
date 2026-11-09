@@ -1,4 +1,4 @@
-# 01 — Source Taxonomy & Provenance
+# 01: Source Taxonomy & Provenance
 
 To build an accurate imprint of how a person thinks, writes, and delegates, `imprint` ingests three distinct source classes (`S1`, `S2`, `S3`). Relying on coding-agent chat logs alone biases the profile toward debugging corrections; combining session archives with authored manuscripts and explicit priors separates **how the person corrects agents** from **how the person writes and frames problems when in full control**.
 
@@ -18,10 +18,10 @@ To build an accurate imprint of how a person thinks, writes, and delegates, `imp
 ### S2. Authored Ground-Truth Artifacts (High-Trust Voice & Structure)
 - **What it captures:** The person's actual prose, sentence cadence, vocabulary, visual hierarchy, and argument structure when writing for peers or leadership.
 - **Supported formats (extracted natively by `imprint digest`):**
-  - Markdown and text drafts (`.md`, `.txt`) — especially early `v1`–`v3` manuscripts before heavy LLM expansion
-  - Word documents (`.docx` — parsed from `word/document.xml`)
-  - Slide decks (`.pptx` — parsed slide-by-slide from `ppt/slides/slide*.xml`)
-  - Visual HTML decks and prototypes (`.html` — extracts both text and `:root` `--*` CSS custom properties)
+  - Markdown and text drafts (`.md`, `.txt`), especially early `v1`–`v3` manuscripts before heavy LLM expansion
+  - Word documents (`.docx`, parsed from `word/document.xml`)
+  - Slide decks (`.pptx`, parsed slide-by-slide from `ppt/slides/slide*.xml`)
+  - Visual HTML decks and prototypes (`.html`, extracting both text and `:root` `--*` CSS custom properties)
   - Remote wiki pages (Confluence, Notion, Google Docs) fetched by the agent via MCP into `<instance>/.local/authored/`
 
 ### S3. Curated Operating Rules (Explicit Self-Model)
