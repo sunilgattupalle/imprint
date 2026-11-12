@@ -89,7 +89,7 @@ Raw session transcripts, verbatim quote ledgers, session UUIDs, and company bind
 
 ## 3. What You Do With an Imprint
 
- install and run `imprint` once; it defaults to `~/.imprint` and links your imprint into your local tools automatically:
+Install and run `imprint` once; it defaults to `~/.imprint` and links your imprint into your local tools automatically:
 
 ```bash
 go install github.com/sunilgattupalle/imprint/cmd/imprint@latest
