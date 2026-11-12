@@ -4,11 +4,12 @@ An imprint is useful only if it **reduces corrective turns in unseen sessions** 
 
 ---
 
-## 1. Held-Out Intervention Coverage (`imprint eval`)
+## 1. Held-Out Intervention Coverage & Blind-Spot Falsification (`imprint eval`)
 Using the untouched 20% holdout split (`~/.imprint/.local/corpus/holdout_turns.jsonl`):
 1. Extract imprint-eligible directive and corrective turns from `holdout_turns.jsonl` (excluding raw JSON/log pastes and routine code-typo fixes).
 2. Score what percentage of held-out interventions are anticipated by **L1 Portable Imprint claims** (`evidence_ledger.json` -> `imprint.json`), and report **L2 Workspace** / **L3 Agent Baseline** matches separately.
-3. Write `.local/eval/holdout_report.md` and `.local/eval/holdout_results.json`.
+3. Export paired `(PrevAssistantSnippet -> UserIntervention)` failure rows to `.local/eval/holdout_pairs.jsonl`.
+4. Explicitly list **Uncovered Held-Out Interventions (Blind Spots)** in `.local/eval/holdout_report.md` so any recurring correction missed by the current imprint is immediately visible.
 
 ---
 

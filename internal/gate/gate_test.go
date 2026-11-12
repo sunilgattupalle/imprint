@@ -88,8 +88,8 @@ workspace_terms_disallowed_in_portable_rules:
     "dimension": "emergent.package_hygiene",
     "scope": "global",
     "status": "graduated",
-    "habit_reflection": "observed_keep",
     "title": "Import from @acme/core instead of subpackages",
+    "default_model_failure": "Importing internal subpackages directly instead of the public package entrypoint.",
     "portable_rule": "Always import shared primitives from @acme/core.",
     "admission_tests": {
       "portability_check": "Applies across all TypeScript monorepos regardless of domain.",

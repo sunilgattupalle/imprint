@@ -53,23 +53,19 @@ Read `~/.imprint/.local/corpus/digest.md` and write:
    - `F5_delegation_and_risk`
    - `F6_emergent` (any recurring builder-specific dimension not covered by `F1`–`F5`)
    Every claim must include:
-   - `dimension`: Specific seeded or emergent dimension ID (e.g. `epistemic.abstraction_depth`, `dialectic.plan_before_code`, `emergent.functional_purity`).
-   - **Gate 1 (`portability_check`):** zero company/workspace proper nouns in `title`, `portable_rule`, `applies_when`, or `flips_when` (put company bindings in `workspace_bindings`).
+   - `dimension`: Specific seeded or emergent dimension ID (e.g. `epistemic.abstraction_depth`, `dialectic.plan_before_code`, `emergent.question_before_write`).
+   - `default_model_failure`: What the un-imprinted base model does wrong in this situation (e.g. capitulating and flip-flopping when probed with a skeptical question, or creating unrequested `.md` files when asked a question).
+   - **Gate 1 (`portability_check`):** zero company/workspace proper nouns in `title`, `default_model_failure`, `portable_rule`, `applies_when`, or `flips_when` (put company bindings in `workspace_bindings`).
    - **Gate 2 (`peer_fork`):** state what a strong peer engineer would legitimately prefer instead.
-   - **Situational Activation (`applies_when` & `flips_when`):** state when this dimension activates and the exact boundary condition where the user intentionally inverts it (for example, when they say *"go fast"* vs. *"go slow and align first"*).
+   - **Situational Activation (`applies_when` & `flips_when`):** state when this dimension activates and the exact boundary condition where the user intentionally inverts it.
 2. `~/.imprint/.local/demoted_non_imprint.json` & `~/.imprint/.local/WORKSPACE.md`: Separated **L2 Workspace Bindings** and **L3 Agent Baseline** rules.
-3. `~/.imprint/IMPRINT.md` (~500–650 tokens, including a situational activation router for `overlays/mode-*.md`) and `~/.imprint/overlays/mode-*.md`.
+3. `~/.imprint/IMPRINT.md` (~500–650 tokens, including a Situational Dispatch Table at the top for `overlays/mode-*.md`) and `~/.imprint/overlays/mode-*.md`.
 
-### Step 4: Habit Reflection Check (Observed Self vs. Aspirational Shift)
-Habits in session logs are often automatic rather than deliberate. Run `imprint review`, show the user the discovered dimensions, and ask:
-- *"Are there any observed habits here you want to keep as-is (`observed_keep`) vs. intentionally adjust or invert (`aspirational_shift`)?"*
-Record the user's choices via `imprint review --set <CLAIM_ID>=observed_keep|aspirational_shift`.
-
-### Step 5: Validate, Auto-Link Across All Harnesses & Evaluate Holdout
+### Step 4: Validate, Auto-Link Across All Harnesses & Inspect Held-Out Blind Spots
 ```bash
 imprint validate
 imprint eval
 imprint brief --cwd . --prompt "verify situational brief" --json
 ```
 - `imprint validate` enforces Gate 1 & Gate 2, exports quote-free `~/.imprint/imprint.json`, and **automatically links** `~/.imprint/IMPRINT.md` and `~/.imprint/.local/WORKSPACE.md` into Claude Code (`~/.claude/CLAUDE.md`), Pi (`~/.pi/agent/AGENTS.md`), Oh My Pi (`~/.omp/agent/AGENTS.md`), OpenCode (`~/.config/opencode/AGENTS.md`), and Hermes (`~/.hermes/SOUL.md`).
-- `imprint eval` tests the claims against the untouched 20% holdout sessions and writes `~/.imprint/.local/eval/holdout_report.md`.
+- `imprint eval` tests the claims against the untouched 20% holdout sessions, exports paired `(PrevAssistantSnippet -> UserIntervention)` failure rows to `~/.imprint/.local/eval/holdout_pairs.jsonl`, and lists any **Uncovered Held-Out Blind Spots** in `~/.imprint/.local/eval/holdout_report.md`.

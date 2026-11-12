@@ -7,8 +7,8 @@ This repository contains the **person-agnostic model, schemas, Go CLI (`imprint`
 Follow [`SKILL.md`](./SKILL.md) step by step (all commands default to `~/.imprint` when `[instance_dir]` is omitted):
 1. Ask the user for any pre-AI writings (`--pre-ai`), authored documents/decks (`--authored`), and disallowed company/workspace terms (`--disallow-term`), fetch remote pages (Confluence/Notion/GitHub) via MCP into `~/.imprint/.local/authored/`, and register local files via `imprint add`.
 2. Run `imprint sync` to initialize `~/.imprint`, sync sessions, deduplicate turns, and produce `~/.imprint/.local/corpus/digest.md`.
-3. Synthesize `.local/evidence_ledger.json` (across `F1`–`F5` seeded facets + `F6_emergent` clusters), `.local/demoted_non_imprint.json`, `.local/WORKSPACE.md`, `IMPRINT.md`, and `overlays/`.
-4. Run the Habit Reflection check with the user (`observed_keep` vs. `aspirational_shift`), then run `imprint validate` (which also auto-links all local coding harnesses) and `imprint eval`.
+3. Synthesize `.local/evidence_ledger.json` (across `F1`–`F5` seeded facets + `F6_emergent` clusters, specifying `applies_when`, `default_model_failure`, `portable_rule`, and `flips_when`), `.local/demoted_non_imprint.json`, `.local/WORKSPACE.md`, `IMPRINT.md`, and `overlays/`.
+4. Run `imprint validate` (which also auto-links all local coding harnesses) and `imprint eval` (inspecting `.local/eval/holdout_report.md` for uncovered blind spots).
 
 **Never write personal or company data into this (`imprint`) repository.** All personal instances live in `~/.imprint` (or another directory outside this repo).
 

@@ -39,11 +39,8 @@
           "dimension": { "type": "string" },
           "scope": { "type": "string" },
           "status": { "type": "string", "enum": ["graduated"] },
-          "habit_reflection": {
-            "type": "string",
-            "enum": ["observed_keep", "aspirational_shift", "unreviewed"]
-          },
           "title": { "type": "string" },
+          "default_model_failure": { "type": "string" },
           "portable_rule": { "type": "string" },
           "admission_tests": {
             "type": "object",

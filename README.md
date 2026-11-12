@@ -9,11 +9,11 @@
 Most context engineering focuses on the organization or the repository. Even personal "memory" systems miss the person: they take raw session transcripts and distill flat episodic facts, treating every turn as a neutral observation. That strips out how the person actually interacted, what risks they refused to take, where they demanded depth, and why they pushed back.
 
 And when people try to write their own `CLAUDE.md` or `AGENTS.md` by hand, three things go wrong:
-1. **Habits are mostly involuntary.** Neither impulsive (System 1) nor deliberate (System 2), working habits fire automatically in response to a situation. People write down how they *think* they work rather than the boundaries they actually enforce across hundreds of sessions.
+1. **Abstract platitudes lose against base-model RLHF reflexes.** Writing *"stress-test my ideas, don't flatter me"* in a prompt file fails the moment you ask a short skeptical question (*"is it really X?"*), because the base model's strongest RLHF prior is to treat a skeptical question as a cue to apologize and reverse course. Rules only hold under pressure when they state the **observable trigger cue**, the **specific base-model failure mode**, the **required counter-move**, and the **flip boundary**.
 2. **Three layers get conflated into one file.** Hand-written instruction files mix **who the person is (L1)**, **company-specific repo conventions (L2)**, and **generic workarounds for LLM bugs (L3)**. That file cannot leave the repo it was written in.
 3. **AI-coauthored text slowly erodes identity.** Articles and specs drafted with LLMs carry a subtle drift. Read them three months later and you no longer recognize the thought as yours. Without anchoring on pre-AI human writing and in-session rewrites, style profiles just feed AI-tainted prose back into the model.
 
-**The hypothesis:** A person's working style is a set of dimensions that activate in combinations depending on the situation (for example, saying *"ship this fast"* on a disposable script vs. *"stop and align on the mental model"* before touching a core abstraction). If we mine those situational interventions from real session history across all coding agents, anchor voice on pre-AI writing, and separate portable judgment from workspace trivia, the resulting imprint can travel with the person across any tool or memory system.
+**The hypothesis:** Operationalized for an AI agent, a person's imprint is the set of situational deltas $(C, F_{\text{base}}) \rightarrow (M, \neg C)$ where the base model's default behavior $F_{\text{base}}$ diverges from the person's judgment, taste, or governance boundary $M$. If we mine those deltas from verbal pushbacks, tool-call trajectory interruptions, and draft-to-final file diffs across all coding agents, anchor voice on pre-AI writing, and separate portable judgment from workspace trivia, the resulting imprint can travel with the person across any tool.
 
 ---
 
@@ -38,18 +38,21 @@ S3. Explicit Priors (CLAUDE.md, etc.)
 | **L2. Workspace Bindings** | How that imprint binds to a **specific company, stack, or repo** | `~/.imprint/.local/WORKSPACE.md` (gitignored) |
 | **L3. Agent Baseline** | Universal competence **every** engineer expects (e.g., verify before claiming done) | `~/.imprint/.local/demoted_non_imprint.json` (excluded from imprint) |
 
-### Two Admission Gates, Situational Activation, and Habit Reflection
+### Two Admission Gates and the 4-Part Claim Contract
 
-A candidate rule graduates into **L1** only if it passes both gates and states its situational boundaries:
+A candidate rule graduates into **L1** only if it passes both admission gates and specifies its 4-part situational contract:
 
 1. **Portability Gate (`portability_check`):** Still holds if the person switches companies or works on an open-source repo tomorrow. Zero company or workspace proper nouns may appear in any exported field.
 2. **Non-Trivial Fork Gate (`peer_fork`):** Another strong, reasonable engineer would legitimately prefer the opposite. If no reasonable peer would prefer the opposite, it is **L3 Agent Baseline**, not personal imprint.
-3. **Situational Activation (`applies_when` & `flips_when`):** Dimensions do not fire uniformly. Every claim states the trigger where it activates (`applies_when`) and the boundary condition where the person intentionally inverts it (`flips_when`, such as terse in chat and executive summaries vs. never compressing away reasoning in deep evaluations; SVG diagrams in published docs vs. ASCII in interactive chat).
-4. **Habit Reflection (`habit_reflection`):** Because habits form involuntarily, discovering a recurring pattern in your transcripts does not automatically mean you want to keep it. Each graduated claim records whether you confirmed it as your intended style (`observed_keep`) or intentionally adjusted it toward a habit you want to build (`aspirational_shift`).
+3. **The 4-Part Situational Contract (`applies_when` $\rightarrow$ `default_model_failure` $\rightarrow$ `portable_rule` $\rightarrow$ `flips_when`):**
+   - `applies_when`: The observable conversational or task cue that activates the rule.
+   - `default_model_failure`: What an un-imprinted base model does wrong in this situation (e.g., capitulating and flip-flopping when probed with a skeptical question, or creating unrequested `.md` files when asked a question).
+   - `portable_rule`: The required counter-move.
+   - `flips_when`: The explicit boundary condition where the person intentionally suspends or inverts the rule.
 
 ### Seeded Facets and Emergent Dimensions
 
-`imprint` starts with five seeded facets (`F1`–`F5`) and an open emergent bucket (`F6_emergent`) so habits unique to a builder are discovered from unclustered corrections rather than forced into fixed boxes:
+`imprint` starts with five seeded facets (`F1`–`F5`) and an open emergent bucket (`F6_emergent`) so recurring interventions outside the seed list are discovered from unclustered corrections rather than forced into fixed boxes:
 
 | Facet | Seeded Dimensions | Question it answers |
 |---|---|---|
@@ -106,18 +109,14 @@ imprint add \
   --authored "~/decks/*.pptx" \
   --disallow-term "CompanyName"
 
-# 3. Your agent (via SKILL.md) synthesizes claims, runs the Habit Reflection check with you, and writes:
+# 3. Your agent (via SKILL.md) synthesizes claims and writes:
 #    .local/evidence_ledger.json, .local/WORKSPACE.md, IMPRINT.md, and overlays/
 
-# 4. Inspect & update Habit Reflection (observed_keep vs. aspirational_shift)
-imprint review
-imprint review --set IMP-F1-01=observed_keep
-
-# 5. Validate Gate 1 & Gate 2, export quote-free imprint.json, auto-link harnesses, and score holdout
+# 4. Validate Gate 1 & Gate 2, export quote-free imprint.json, auto-link harnesses, and run holdout blind-spot eval
 imprint validate
 imprint eval
 
-# 6. Compile a situational operating brief for a specific prompt and working directory
+# 5. Compile a situational operating brief for a specific prompt and working directory
 imprint brief --cwd . --prompt "write the architecture spec" --files "README.md"
 ```
 
@@ -130,7 +129,7 @@ Running `imprint sync`, `imprint validate`, or `imprint link` writes an idempote
 - **OpenCode (`opencode`):** Auto-linked in `~/.config/opencode/AGENTS.md`.
 - **Hermes (`hermes`):** Auto-linked in `~/.hermes/SOUL.md`.
 - **Harness (`auggie`) & Cursor:** Reference `~/.imprint/IMPRINT.md` in your global user rules or workspace `AGENTS.md` / `.cursor/rules`.
-- **Episodic Memory Systems:** Read `~/.imprint/imprint.json` so memory extraction and retrieval are conditioned on the person's active dimensions (`facet`, `dimension`, `applies_when`, `flips_when`, `habit_reflection`) rather than flat transcript summaries.
+- **Episodic Memory Systems:** Read `~/.imprint/imprint.json` so memory extraction and retrieval are conditioned on the person's active dimensions (`facet`, `dimension`, `applies_when`, `default_model_failure`, `flips_when`) rather than flat transcript summaries.
 
 ---
 
@@ -138,16 +137,16 @@ Running `imprint sync`, `imprint validate`, or `imprint link` writes an idempote
 
 Future work is organized into three capability tracks:
 1. **Track 1: Embedded Session Indexing (`sunilgattupalle/agentsview` integration).** Subsume session collection and incremental watching directly under `imprint` so multi-agent transcript indexing, native `auggie` parsing, and friction signal detection run without a separate daemon setup.
-2. **Track 2: Imprint-Conditioned Episodic Memory.** Connect `imprint.json` dimensions to episodic recall so stored memories capture *(situation, user intervention, activated dimension)* and rank retrieval by the user's risk and abstraction posture.
-3. **Track 3: Unsupervised Dimension Clustering & Diff-Based Voice Extraction.** Expand beyond lexical probes by clustering in-session before/after user edits (where the user rewrote an agent's draft) and surfacing newly formed habits for periodic review.
+2. **Track 2: Paired Behavioral Replay on Held-Out Failure Pairs.** Use `.local/eval/holdout_pairs.jsonl` (`PrevAssistantSnippet -> UserIntervention`) to run automated A/B replay tests verifying that responses generated with `imprint brief` eliminate the user's turn $t+1$ correction.
+3. **Track 3: Imprint-Conditioned Salience Filter for Episodic Memory.** Pass `imprint.json` as the write-filter into `agentsview recall` so project memories reflect what the person actually cares about.
 
 ---
 
 ## 5. Repository Layout
 
-- [`SKILL.md`](./SKILL.md): Agent skill for building, refreshing, and reviewing an imprint in `~/.imprint`.
+- [`SKILL.md`](./SKILL.md): Agent skill for building, refreshing, and validating an imprint in `~/.imprint`.
 - [`AGENTS.md`](./AGENTS.md): Operating instructions and non-negotiable invariants for agents working in this repo.
-- [`adrs/`](./adrs): Architecture Decision Records (`ADR-0001` through `ADR-0004`) defining the boundary between Imprint, Context, and Episodic Memory, and modeling Habits as situational reflexes.
-- [`cmd/imprint/`](./cmd/imprint) & [`internal/`](./internal): Deterministic Go CLI packages (`config`, `collector`, `ingest`, `corpus`, `digest`, `gate`, `eval`, `link`, `review`, `brief`).
+- [`adrs/`](./adrs): Architecture Decision Records (`ADR-0001` through `ADR-0004`).
+- [`cmd/imprint/`](./cmd/imprint) & [`internal/`](./internal): Deterministic Go CLI packages (`config`, `collector`, `ingest`, `corpus`, `digest`, `gate`, `eval`, `link`, `brief`).
 - [`schemas/`](./schemas): JSON Schemas for local evidence claims (`claim.schema.json`) and exported quote-free imprints (`imprint.schema.json`).
 - [`docs/`](./docs): Method and architecture specifications (`01-sources.md` through `06-architecture-spec.md`).

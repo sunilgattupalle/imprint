@@ -86,15 +86,12 @@ Relying only on what a user types in prompts misses what they do when they edit 
 
 ---
 
-## 4. Separation of Imprint from Episodic Memory (`ADR-0001` & `ADR-0002`)
+## 4. Separation of Imprint from Episodic Memory & Platitude Prompts (`ADR-0001` & `ADR-0002`)
 
-Per [`adrs/0001-imprint-vs-context-and-episodic-memory.md`](../adrs/0001-imprint-vs-context-and-episodic-memory.md) and [`adrs/0002-habits-of-mind-vs-mechanical-linters.md`](../adrs/0002-habits-of-mind-vs-mechanical-linters.md), `imprint` never stores project-level episodic facts (`memories.json` or `recall_entries`). Instead:
-1. **Episodic Memory $\xrightarrow{\text{distills}}$ Imprint:** `imprint` reads raw episodes from `sessions.db`, strips project-specific nouns, and graduates cross-project human invariants into `imprint.json`. Once graduated, the habit replaces the historical episodes.
-2. **Imprint $\xrightarrow{\text{conditions}}$ Episodic Memory:** External episodic memory systems (`agentsview recall`) read `imprint.json` as their salience prior so the memories they extract reflect what the person cares about.
-
-### Reflection CLI (`imprint review`)
-- `imprint review`: Displays a table of all graduated L1 claims (`id`, `facet`, `habit_reflection`, `evidence`, `title`) so the owner can separate deliberate judgment/taste (`observed_keep`) from involuntary routines they want to change (`aspirational_shift`).
-- `imprint review --set <claim_id>=<observed_keep|aspirational_shift>`: Updates `habit_reflection` in `.local/evidence_ledger.json` and re-runs `ValidateAndExport` so `imprint.json` stays in sync.
+Per [`adrs/0001-imprint-vs-context-and-episodic-memory.md`](../adrs/0001-imprint-vs-context-and-episodic-memory.md) and [`adrs/0002-habits-of-mind-vs-mechanical-linters.md`](../adrs/0002-habits-of-mind-vs-mechanical-linters.md):
+1. **`imprint` never stores project-level episodic facts (`recall_entries`).** It mines cross-project human invariants from `sessions.db` and leaves project memory storage to `agentsview recall`.
+2. **Every claim specifies `(applies_when, default_model_failure) -> (portable_rule, flips_when)`.** Naming the base model's failure mode prevents RLHF sycophancy from overriding abstract rules when the user asks a skeptical question.
+3. **`imprint eval` exports paired failure benchmarks (`.local/eval/holdout_pairs.jsonl`) and reports Uncovered Blind Spots** in `.local/eval/holdout_report.md` so missing rules are immediately visible.
 
 ---
 

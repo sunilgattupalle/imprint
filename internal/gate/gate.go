@@ -33,21 +33,21 @@ type CounterEvidenceItem struct {
 }
 
 type RawClaim struct {
-	ID                string                `json:"id"`
-	Facet             string                `json:"facet"`
-	Dimension         string                `json:"dimension,omitempty"`
-	Scope             string                `json:"scope"`
-	Status            string                `json:"status"`
-	HabitReflection   string                `json:"habit_reflection,omitempty"`
-	Title             string                `json:"title"`
-	PortableRule      string                `json:"portable_rule"`
-	AdmissionTests    AdmissionTests        `json:"admission_tests"`
-	AppliesWhen       string                `json:"applies_when"`
-	FlipsWhen         string                `json:"flips_when"`
-	WorkspaceBindings map[string]string     `json:"workspace_bindings,omitempty"`
-	EvalMatcher       string                `json:"eval_matcher,omitempty"`
-	Evidence          []EvidenceItem        `json:"evidence"`
-	CounterEvidence   []CounterEvidenceItem `json:"counter_evidence"`
+	ID                  string                `json:"id"`
+	Facet               string                `json:"facet"`
+	Dimension           string                `json:"dimension,omitempty"`
+	Scope               string                `json:"scope"`
+	Status              string                `json:"status"`
+	Title               string                `json:"title"`
+	DefaultModelFailure string                `json:"default_model_failure,omitempty"`
+	PortableRule        string                `json:"portable_rule"`
+	AdmissionTests      AdmissionTests        `json:"admission_tests"`
+	AppliesWhen         string                `json:"applies_when"`
+	FlipsWhen           string                `json:"flips_when"`
+	WorkspaceBindings   map[string]string     `json:"workspace_bindings,omitempty"`
+	EvalMatcher         string                `json:"eval_matcher,omitempty"`
+	Evidence            []EvidenceItem        `json:"evidence"`
+	CounterEvidence     []CounterEvidenceItem `json:"counter_evidence"`
 }
 
 type DemotedRule struct {
@@ -66,18 +66,18 @@ type ProvenanceCounts struct {
 }
 
 type PublicClaim struct {
-	ID               string           `json:"id"`
-	Facet            string           `json:"facet"`
-	Dimension        string           `json:"dimension,omitempty"`
-	Scope            string           `json:"scope"`
-	Status           string           `json:"status"`
-	HabitReflection  string           `json:"habit_reflection,omitempty"`
-	Title            string           `json:"title"`
-	PortableRule     string           `json:"portable_rule"`
-	AdmissionTests   AdmissionTests   `json:"admission_tests"`
-	AppliesWhen      string           `json:"applies_when"`
-	FlipsWhen        string           `json:"flips_when"`
-	ProvenanceCounts ProvenanceCounts `json:"provenance_counts"`
+	ID                  string           `json:"id"`
+	Facet               string           `json:"facet"`
+	Dimension           string           `json:"dimension,omitempty"`
+	Scope               string           `json:"scope"`
+	Status              string           `json:"status"`
+	Title               string           `json:"title"`
+	DefaultModelFailure string           `json:"default_model_failure,omitempty"`
+	PortableRule        string           `json:"portable_rule"`
+	AdmissionTests      AdmissionTests   `json:"admission_tests"`
+	AppliesWhen         string           `json:"applies_when"`
+	FlipsWhen           string           `json:"flips_when"`
+	ProvenanceCounts    ProvenanceCounts `json:"provenance_counts"`
 }
 
 type PublicImprint struct {
@@ -171,6 +171,7 @@ func ValidateAndExport(instanceDir string) error {
 		// Gate 1: Portability check across all exported text fields
 		blob := strings.Join([]string{
 			c.Title,
+			c.DefaultModelFailure,
 			c.PortableRule,
 			c.AppliesWhen,
 			c.FlipsWhen,
@@ -211,17 +212,17 @@ func ValidateAndExport(instanceDir string) error {
 		}
 
 		sanitized = append(sanitized, PublicClaim{
-			ID:              c.ID,
-			Facet:           c.Facet,
-			Dimension:       c.Dimension,
-			Scope:           c.Scope,
-			Status:          c.Status,
-			HabitReflection: c.HabitReflection,
-			Title:           c.Title,
-			PortableRule:    c.PortableRule,
-			AdmissionTests:  c.AdmissionTests,
-			AppliesWhen:     c.AppliesWhen,
-			FlipsWhen:       c.FlipsWhen,
+			ID:                  c.ID,
+			Facet:               c.Facet,
+			Dimension:           c.Dimension,
+			Scope:               c.Scope,
+			Status:              c.Status,
+			Title:               c.Title,
+			DefaultModelFailure: c.DefaultModelFailure,
+			PortableRule:        c.PortableRule,
+			AdmissionTests:      c.AdmissionTests,
+			AppliesWhen:         c.AppliesWhen,
+			FlipsWhen:           c.FlipsWhen,
 			ProvenanceCounts: ProvenanceCounts{
 				EvidenceItems:        len(c.Evidence),
 				DistinctSourceTypes:  len(srcTypes),

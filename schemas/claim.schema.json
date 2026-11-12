@@ -43,14 +43,13 @@
       "type": "string",
       "enum": ["candidate", "graduated", "retired"]
     },
-    "habit_reflection": {
-      "type": "string",
-      "enum": ["observed_keep", "aspirational_shift", "unreviewed"],
-      "description": "Whether the owner confirmed this observed habit as their desired behavior (observed_keep) or intentionally inverted/tuned it toward an aspirational habit (aspirational_shift)."
-    },
     "title": {
       "type": "string",
       "maxLength": 110
+    },
+    "default_model_failure": {
+      "type": "string",
+      "description": "The specific base-model RLHF default behavior that fails in this situation (e.g. capitulating when asked a skeptical question, or creating unrequested markdown files)."
     },
     "portable_rule": {
       "type": "string",

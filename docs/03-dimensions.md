@@ -33,15 +33,17 @@ A builder's behavior is multi-dimensional: in a given situation, two or three di
 | **`F3_compression_and_structure`** | `structure.compression_asymmetry`, `structure.opening_move`, `structure.progressive_depth`, `structure.revision_mechanics` | How the person structures density and revisions across genres (Compression Asymmetry between terse chat/one-pagers and deep evaluations, companion-pair docs, progressive depth, versioned `-v2` iteration). |
 | **`F4_voice_and_visuals`** | `voice.prose_cadence`, `voice.lexical_bans`, `visuals.palette_restraint`, `visuals.diagram_medium` | How the person's prose (anchored on `--pre-ai` pure-human writing) and visual taste read (sentence cadence, contrast pairs, banned AI clichés, restrained palette, surface-matched diagrams). |
 | **`F5_delegation_and_risk`** | `delegation.blast_radius_gate`, `delegation.merge_ownership`, `delegation.git_and_identity`, `delegation.continuation_model` | Where the person sets the human/agent boundary (risk-tiered autonomy gates, human-owned merge, event-driven/webhook continuation over polling, Git & author identity discipline). |
-| **`F6_emergent`** | `emergent.<custom_dimension>` | Recurring situational corrections or preferences discovered in the user's sessions (`FX` unclustered corrections in `digest.md`) that fall outside `F1`–`F5`. |
+| **`F6_emergent`** | `emergent.<custom_dimension>` | Recurring situational corrections or preferences discovered in the user's sessions (`FX` unclustered corrections and `5A` trajectory pushbacks in `digest.md`) that fall outside `F1`–`F5`. |
 
 ---
 
-## 3. Habit Reflection (`observed_keep` vs. `aspirational_shift`)
+## 3. The 4-Part Claim Contract (`applies_when` $\rightarrow$ `default_model_failure` $\rightarrow$ `portable_rule` $\rightarrow$ `flips_when`)
 
-Because habits form involuntarily, observing a pattern in historical transcripts does not mean the person wants to perpetuate it forever. Each claim records `habit_reflection`:
-- `observed_keep`: Confirmed by the owner as their authentic, intended working style.
-- `aspirational_shift`: An observed pattern that the owner intentionally chooses to modify or invert going forward.
+Abstract instructions (*"be rigorous"*, *"don't flatter"*) fail under base-model RLHF pressure unless they name the specific trigger and failure mode:
+- `applies_when`: Observable conversational or artifact trigger cue.
+- `default_model_failure`: What the un-imprinted base model does wrong when that cue occurs.
+- `portable_rule`: The required counter-move.
+- `flips_when`: The boundary condition where the rule suspends or inverts.
 
 ---
 

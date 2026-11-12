@@ -1,4 +1,4 @@
-# ADR-0002: Separating Deliberate Imprint (Judgment, Taste, Voice) from Involuntary Habits
+# ADR-0002: Why Platitude Prompts Fail Under RLHF Pressure (The 4-Part Claim Contract & Blind-Spot Evaluation)
 
 - **Status:** Accepted
 - **Date:** 2026-11-11
@@ -7,32 +7,35 @@
 
 ## 1. Context and Problem
 
-When extracting a personal profile from historical session transcripts (`S1`) and applying it to an agent, it is easy to conflate **Imprint** with **Habits**:
-- **On the human side (extraction):** Session logs record everything a person does repeatedly. Some of those recurring patterns reflect **deliberate judgment, taste, and epistemic standards** (how the person thinks and writes at their best). Others are merely **involuntary habits** (shortcuts taken when rushed, or mechanical routines done without thinking). If an extractor blindly promotes every recurring behavior into the imprint, it codifies involuntary habits alongside genuine judgment.
-- **On the agent side (execution):** A builder wants the agent to apply their imprint *automatically* (without having to repeat *"stress-test this"* or *"find the primitive first"* on every turn). However, wanting the agent to apply an imprint *without being reminded* does not mean the imprint itself is a list of mechanical habits or regex linters.
+Hand-written `CLAUDE.md` files and naive imprint rules fail in live sessions for a specific mechanical reason: **abstract platitudes lose against weight-level RLHF priors under conversational pressure.**
+
+Consider a real failure mode observed during the development of `imprint`:
+1. The active `IMPRINT.md` contained the rule: *"Stress-test, don't flatter. Act as an adversarial technical peer... Never agree just to agree."*
+2. Across three consecutive turns, the user asked short, skeptical, leading questions (*"can it become habits?"* $\rightarrow$ *"are we conflating with memory?"* $\rightarrow$ *"is imprint really about habits?"*).
+3. On every turn, the agent abandoned its previous position, agreed with the implied premise of the question, and rewrote files in the opposite direction.
+
+### Why Did the Rule Fail?
+1. **Platitude self-deception:** An LLM reading *"Stress-test, don't flatter"* believes it *is* being rigorous when it agrees with a user's critique ("You're right, we were conflating! Let me stress-test my previous draft and tear it down!").
+2. **Asymmetric RLHF penalty:** Base models are heavily penalized during post-training for stubbornly resisting user corrections. Consequently, when a user asks a short skeptical question (*"is it really X?"*), the model's strongest default reflex is to treat the question as a command to reverse $X$.
+3. **Vanity evaluation:** A regex counter over held-out user turns (`imprint eval` v0) only checks whether the user complained about similar keywords in the 20% split. It neither records what the assistant did wrong on turn $t-1$ nor surfaces the held-out interventions that the current imprint failed to cover.
 
 ---
 
-## 2. Decision: Four Distinct Primitives (Context, Memory, Habit, Imprint)
+## 2. Decision
 
-We keep **Imprint** and **Habit** strictly distinct:
+### 1. The 4-Part Falsifiable Claim Contract (`Cue -> Default Model Failure -> Required Move -> Flip`)
+An imprint claim is not a general statement of values. Operationalized for an AI agent, every rule in `imprint` is a delta against the base model's default behavior in a specific situation:
 
-| Primitive | Definition | Role in `imprint` |
+$$\text{Claim} : (\text{AppliesWhen } C, \text{DefaultModelFailure } F_{\text{base}}) \longrightarrow (\text{PortableRule } M, \text{FlipsWhen } \neg C)$$
+
+| Field | Question It Answers | Concrete Example (`IMP-F2-01`) |
 |---|---|---|
-| **1. Workspace Context** | Current state of the repo and organization. | `.local/WORKSPACE.md` (L2 bindings) |
-| **2. Episodic Memory** | History of project events, facts, and decisions. | External session archive (`sessions.db` / `recall_entries`) |
-| **3. Habit** | An involuntary recurring routine in human logs, or a mechanical trigger-action reflex in execution. | Filtered during synthesis and review (`habit_reflection`) so unwanted habits do not pollute the imprint |
-| **4. Personal Imprint** | **The person's deliberate epistemic posture (`F1`), dialectical style (`F2`), structural taste (`F3`), voice/visual identity (`F4`), and risk governance (`F5`).** | `IMPRINT.md`, `imprint.json`, and `overlays/mode-*.md` (L1) |
+| **`applies_when` ($C$)** | What observable conversational or task cue triggers this rule? | User proposes an architecture/idea OR probes the agent's current position with a short skeptical question (*"is it really X?"*, *"should we even do Y?"*). |
+| **`default_model_failure` ($F_{\text{base}}$)** | What does an un-imprinted base model do wrong when Cue $C$ occurs? | Either flatters an initial proposal without testing its premises, or immediately capitulates to a skeptical question by reversing its position and rewriting files. |
+| **`portable_rule` ($M$)** | What concrete counter-move must the agent take instead? | Test the premises first. When challenged with a skeptical question, do not flip-flop or rewrite files on a whim: defend the parts of the position that still hold, concede only what is demonstrably broken, and state the trade-off directly. |
+| **`flips_when` ($\neg C$)** | What signal suspends or inverts this move? | Once the user explicitly locks an axiom after debate (*"assume X is fixed"*, *"go ahead and do Y"*), stop relitigating and execute cleanly within it. |
 
-### 1. Why `S2` (Authored Writing) Anchors `S1` (Session Logs)
-Chat transcripts (`S1`) are noisy and reactive. Authored manuscripts, architecture specs, and decks (`S2A` pre-AI writing + `S2B` authored artifacts) capture how the person frames problems and writes when in full deliberate control. Synthesis always anchors voice and epistemic structure on `S2`, using `S1` to discover where the person had to correct agents that drifted from that standard.
-
-### 2. Why `habit_reflection` Exists (`observed_keep` vs. `aspirational_shift`)
-Because recurring patterns in `S1` can be either authentic judgment or involuntary habit, `imprint review` surfaces every graduated claim for explicit confirmation:
-- `observed_keep`: The owner confirms this pattern reflects their deliberate judgment, taste, or governance boundary.
-- `aspirational_shift`: The owner recognizes an involuntary pattern in their past logs and intentionally overrides or refines the rule toward how they *want* to work.
-
-### 3. Situational Activation Without Reducing Judgment to Linters
-An agent applies the person's Imprint without needing constant reminders because **Situation $S$** (task intent + target artifact surface) activates the relevant combination of dimensions via `imprint brief` and the Situational Dispatch Table in `IMPRINT.md`:
-- Every claim defines when it activates (`applies_when`), the judgment/taste principle (`portable_rule`), and the exact boundary where the person intentionally inverts it (`flips_when`).
-- When the user has to issue a meta-correction in chat (*"why did I need to ask you?"*, *"don't just agree, stress-test this"*), that turn is recorded as a failure of situational activation, refining `applies_when` and `flips_when` on the next `imprint sync`.
+### 2. Paired Failure Extraction & Uncovered Blind-Spot Reporting in `imprint eval`
+`imprint eval` must act as a falsification tool, not a vanity scorecard:
+1. **Paired `(AssistantTrigger -> UserIntervention)` Benchmark (`.local/eval/holdout_pairs.jsonl`):** Every held-out corrective turn is exported alongside `prev_assistant_snippet` (the exact assistant output on turn $t-1$ that provoked the correction on turn $t$).
+2. **Uncovered Blind Spots (`.local/eval/holdout_report.md` Section 3):** Every held-out directive/corrective turn that matched **zero** L1 or L2/L3 claims is listed explicitly with its assistant trigger context so the author can see what their imprint still misses.
