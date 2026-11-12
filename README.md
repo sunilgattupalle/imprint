@@ -1,4 +1,4 @@
-# Imprint Model (`imprint-model`)
+# Imprint (`imprint`)
 
 > Blueprint and Go CLI to build a portable imprint of a person, carrying their judgment, taste, and voice into any AI tool as it is used.
 
@@ -15,7 +15,7 @@ A builder does not experience AI tools as stateless API calls. They experience r
 
 Hand-written `CLAUDE.md` or `AGENTS.md` files rarely solve this for long. First, people write down how they *think* they work rather than the boundaries they actually enforce across hundreds of sessions. Second, hand-written rules mix three different layers into one prompt: **who the person is**, **company-specific repo conventions**, and **generic workarounds for LLM bugs**. That file cannot leave the repo it was written in, and rules meant for terse chat replies break deep technical specs when applied blindly.
 
-`imprint-model` turns your real historical traces (coding-agent transcripts via [AgentsView](https://github.com/wesm/agentsview) plus your own authored manuscripts and decks) into a verified, portable personal imprint with explicit boundary conditions (`flips_when`) for when each rule inverts.
+`imprint` turns your real historical traces (coding-agent transcripts via [AgentsView](https://github.com/sunilgattupalle/agentsview) plus your own authored manuscripts and decks) into a verified, portable personal imprint with explicit boundary conditions (`flips_when`) for when each rule inverts.
 
 ---
 
@@ -29,35 +29,17 @@ Generating an imprint produces three lightweight artifacts that travel across ev
 | **`overlays/mode-*.md`** | ~250–400 tokens each | **Task-specific depth.** Attached on demand when the task matches (`mode-architecture-and-specs.md`, `mode-exec-memos-and-decks.md`, `mode-visual-html-and-prototypes.md`, `mode-coding-and-prs.md`, `mode-autonomous-orchestration.md`). |
 | **`.local/WORKSPACE.md`** | Local only | **Company/repo bindings.** Loaded alongside `IMPRINT.md` only when working inside that workspace's repositories. |
 
-### Wiring Across Your Tools
+### Automatic Wiring Across Your Tools (`imprint link`)
 
-- **Claude Code CLI & Claude Desktop (Code / Cowork tabs):**
-  Reference your imprint in `~/.claude/CLAUDE.md` so every local session inherits it automatically:
-  ```markdown
-  @~/path/to/your-imprint/IMPRINT.md
-  @~/path/to/your-imprint/.local/WORKSPACE.md
-  ```
-  When starting a spec, memo, deck, or visual prototype, `@`-mention the matching file in `overlays/mode-*.md`.
-- **Harness (`auggie`) & Cursor:**
-  Add `IMPRINT.md` to your global user rules (or workspace `AGENTS.md` / `.cursor/rules`), and attach the matching `overlays/mode-*.md` when shifting into architecture, deck, or prototype work.
-- **Pi (`pi`) & Oh My Pi (`omp`):**
-  Link or include `IMPRINT.md` in `~/.pi/agent/AGENTS.md` and `~/.omp/agent/AGENTS.md` (both harnesses load their global `AGENTS.md` into every session startup context and support `@~/path/to/your-imprint/overlays/mode-*.md` in prompts).
-- **OpenCode (`opencode`):**
-  Link `IMPRINT.md` to `~/.config/opencode/AGENTS.md`, or add it to the `instructions` array in `~/.config/opencode/opencode.json`:
-  ```json
-  {
-    "instructions": [
-      "~/path/to/your-imprint/IMPRINT.md",
-      "~/path/to/your-imprint/.local/WORKSPACE.md"
-    ]
-  }
-  ```
-- **Hermes (`hermes`):**
-  Include `IMPRINT.md` in `~/.hermes/SOUL.md` (or `~/.hermes/MEMORY.md`) for global persona/judgment defaults, and copy or symlink `overlays/` as on-demand skills under `~/.hermes/skills/`.
-- **Claude Desktop (Chat / Projects) & ChatGPT:**
-  Paste `IMPRINT.md` into **Settings -> Personal Preferences / Custom Instructions**, and attach specific `overlays/mode-*.md` files to individual Projects as project knowledge.
-- **Custom Agents & Evaluation Harnesses:**
-  Read `<instance>/imprint.json` programmatically to select rules by `facet`, `scope`, `applies_when`, and `flips_when`.
+Running `imprint sync`, `imprint validate`, or `imprint link` automatically wires `~/.imprint/IMPRINT.md` and `~/.imprint/.local/WORKSPACE.md` into every detected coding harness on your machine via an idempotent managed block:
+
+- **Claude Code CLI & Claude Desktop (Code / Cowork tabs):** Auto-linked in `~/.claude/CLAUDE.md`.
+- **Pi (`pi`) & Oh My Pi (`omp`):** Auto-linked in `~/.pi/agent/AGENTS.md` and `~/.omp/agent/AGENTS.md`.
+- **OpenCode (`opencode`):** Auto-linked in `~/.config/opencode/AGENTS.md`.
+- **Hermes (`hermes`):** Auto-linked in `~/.hermes/SOUL.md`.
+- **Harness (`auggie`) & Cursor:** Reference `~/.imprint/IMPRINT.md` in your global user rules or workspace `AGENTS.md` / `.cursor/rules`.
+- **Claude Desktop (Chat / Projects) & ChatGPT:** Paste `~/.imprint/IMPRINT.md` into **Settings -> Personal Preferences / Custom Instructions**, and attach specific `overlays/mode-*.md` files to individual Projects.
+- **Custom Agents & Memory Systems:** Read `~/.imprint/imprint.json` programmatically to select rules and condition episodic memory extraction by `facet`, `dimension`, `scope`, `applies_when`, `flips_when`, and `habit_reflection`.
 
 ---
 
@@ -79,15 +61,20 @@ A candidate rule graduates into **L1** only if it passes both gates and states i
 2. **Non-Trivial Fork Gate (`peer_fork`):** Another strong, reasonable engineer would legitimately prefer the opposite. If no reasonable peer would prefer the opposite, it is **L3 Agent Baseline**, not personal imprint.
 3. **Flip Boundary (`flips_when`):** Every rule states the exact condition where the person intentionally inverts it (for example: terse in chat and executive summaries vs. never compressing away reasoning in deep evaluations; SVG diagrams in published docs vs. ASCII in interactive chat).
 
-### Five Portable Facets
+### Seeded Facets + Emergent Dimensions & Habit Reflection
+
+`imprint` combines **5 seeded portable facets** with **emergent cluster discovery** (`F6_emergent`) so recurring habits outside the seed list are discovered automatically:
 
 | Facet | Question it answers |
 |---|---|
 | **`F1_epistemic_posture`** | How does this person decide what is true, well-abstracted, and properly evaluated? |
 | **`F2_dialectical_style`** | When should the agent challenge vs. execute, and how are disagreements resolved? |
 | **`F3_compression_and_structure`** | Where does this person want extreme compression vs. full analytical depth, and how are documents structured? |
-| **`F4_voice_and_visuals`** | What sentence cadence, vocabulary, visual hierarchy, and diagram medium match their hand? |
+| **`F4_voice_and_visuals`** | What sentence cadence (anchored on `--pre-ai` pure-human writing), vocabulary, visual hierarchy, and diagram medium match their hand? |
 | **`F5_delegation_and_risk`** | Which actions are autonomous, which require human sign-off, and how are long-running tasks coordinated? |
+| **`F6_emergent`** | What recurring situational corrections or preferences unique to this builder emerged outside `F1`–`F5`? |
+
+Each claim also records **`habit_reflection`** (`observed_keep` vs. `aspirational_shift`), letting you inspect your observed habits and decide whether to preserve them or intentionally steer your agent toward a new habit.
 
 ### Two-Zone Privacy Boundary
 
@@ -121,31 +108,28 @@ Raw session transcripts, verbatim quote ledgers, session UUIDs, and company bind
 Install the Go CLI:
 
 ```bash
-go install github.com/sunilgattupalle/imprint-model/cmd/imprint@latest
+go install github.com/sunilgattupalle/imprint/cmd/imprint@latest
 ```
 
-The `imprint` CLI handles deterministic collection, deduplication, document parsing, gate validation, and holdout scoring. Your coding agent (guided by [`SKILL.md`](./SKILL.md)) handles source curation and claim synthesis:
+All commands default to **`~/.imprint`** (no directory or owner arguments needed):
 
 ```bash
-# 1. Scaffold two-zone instance, wire ~/.agentsview/config.toml, discover local priors
-imprint init <instance_dir> --owner-id "<id>" --owner-name "<Name>" --sync
+# 1. Sync local agent sessions, scaffold ~/.imprint, and build .local/corpus/digest.md
+imprint sync
 
-# 2. Register authored manuscripts (.md, .txt, .docx, .pptx, .html), chat exports, and banned workspace terms
-imprint add <instance_dir> \
+# 2. (Optional) Register pre-AI pure-human writings, authored docs/decks, and disallowed company terms
+imprint add \
+  --pre-ai "~/writings/pre-2023-*.md" \
   --authored "~/docs/*.md" \
   --authored "~/decks/*.pptx" \
-  --chats "~/exports/chatgpt-*.json" \
   --disallow-term "CompanyName"
 
-# 3. Deduplicate sessions, strip non-human role=user noise, split 80/20, and build .local/corpus/digest.md
-imprint digest <instance_dir>
-
-# 4. Agent reads .local/corpus/digest.md (per SKILL.md) and writes:
+# 3. Agent reads ~/.imprint/.local/corpus/digest.md (per SKILL.md) and writes:
 #    .local/evidence_ledger.json, .local/WORKSPACE.md, IMPRINT.md, and overlays/
 
-# 5. Enforce Gate 1 & Gate 2, export quote-free imprint.json, and score against the 20% holdout split
-imprint validate <instance_dir>
-imprint eval <instance_dir>
+# 4. Enforce Gate 1 & Gate 2, export quote-free imprint.json, auto-link into all harnesses, and score holdout
+imprint validate
+imprint eval
 ```
 
 ---

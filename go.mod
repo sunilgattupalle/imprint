@@ -1,4 +1,4 @@
-module github.com/sunilgattupalle/imprint-model
+module github.com/sunilgattupalle/imprint
 
 go 1.26.4
 

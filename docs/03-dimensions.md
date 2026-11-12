@@ -22,15 +22,24 @@ To prevent a personal imprint from turning into a dumping ground of company triv
 
 ---
 
-## 2. The Five Portable Facets
+## 2. Five Seeded Facets + Emergent Dimensions (`F6_emergent`)
 
-| Facet | What it captures |
-|---|---|
-| **`F1_epistemic_posture`** | How the person decides what is true, well-abstracted, and properly evaluated (computational primitives first, single source of truth, explicit epistemic status, rubric-before-benchmark, independent evaluation before org fit, conservation-law unit economics). |
-| **`F2_dialectical_style`** | How the person wants the agent to collaborate and argue (adversarial stress-testing vs. flattery, lock-in flip once an axiom is set, mental model alignment before code/formatting, cross-model critique). |
-| **`F3_compression_and_structure`** | How the person structures density and revisions across genres (Compression Asymmetry between terse chat/one-pagers and deep evaluations, companion-pair docs, progressive depth, capability tracks vs. timelines, versioned `-v2` iteration). |
-| **`F4_voice_and_visuals`** | How the person's prose and visual taste read (sentence cadence, contrast pairs, banned AI clichés, restrained palette with semantic status colors, surface-matched diagrams: ASCII in chat vs. SVG in published docs). |
-| **`F5_delegation_and_risk`** | Where the person sets the human/agent boundary (risk-tiered autonomy gates, human-owned merge, event-driven/webhook continuation over polling, Git & author identity discipline). |
+| Facet | Seeded Dimensions | What it captures |
+|---|---|---|
+| **`F1_epistemic_posture`** | `epistemic.abstraction_depth`, `epistemic.single_source_of_truth`, `epistemic.verification_bar`, `epistemic.unit_economics` | How the person decides what is true, well-abstracted, and properly evaluated (computational primitives first, single source of truth, explicit epistemic status, rubric-before-benchmark, conservation-law unit economics). |
+| **`F2_dialectical_style`** | `dialectic.challenge_threshold`, `dialectic.plan_before_code`, `dialectic.option_comparison`, `dialectic.lock_in_flip` | How the person wants the agent to collaborate and argue (adversarial stress-testing vs. flattery, lock-in flip once an axiom is set, mental model alignment before code/formatting). |
+| **`F3_compression_and_structure`** | `structure.compression_asymmetry`, `structure.opening_move`, `structure.progressive_depth`, `structure.revision_mechanics` | How the person structures density and revisions across genres (Compression Asymmetry between terse chat/one-pagers and deep evaluations, companion-pair docs, progressive depth, versioned `-v2` iteration). |
+| **`F4_voice_and_visuals`** | `voice.prose_cadence`, `voice.lexical_bans`, `visuals.palette_restraint`, `visuals.diagram_medium` | How the person's prose (anchored on `--pre-ai` pure-human writing) and visual taste read (sentence cadence, contrast pairs, banned AI clichés, restrained palette, surface-matched diagrams). |
+| **`F5_delegation_and_risk`** | `delegation.blast_radius_gate`, `delegation.merge_ownership`, `delegation.git_and_identity`, `delegation.continuation_model` | Where the person sets the human/agent boundary (risk-tiered autonomy gates, human-owned merge, event-driven/webhook continuation over polling, Git & author identity discipline). |
+| **`F6_emergent`** | `emergent.<custom_dimension>` | Recurring situational corrections or preferences discovered in the user's sessions (`FX` unclustered corrections in `digest.md`) that fall outside `F1`–`F5`. |
+
+---
+
+## 3. Habit Reflection (`observed_keep` vs. `aspirational_shift`)
+
+Because habits are often automatic rather than deliberate, each claim supports a `habit_reflection` status:
+- `observed_keep`: Confirmed by the owner as their authentic, intended working style.
+- `aspirational_shift`: An observed pattern that the owner intentionally chooses to modify or invert going forward.
 
 ---
 

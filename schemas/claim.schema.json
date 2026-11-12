@@ -18,7 +18,7 @@
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^IMP-F[1-5]-[0-9]{2}$"
+      "pattern": "^IMP-(F[1-6]|E)-[0-9]{2}$"
     },
     "facet": {
       "type": "string",
@@ -27,8 +27,13 @@
         "F2_dialectical_style",
         "F3_compression_and_structure",
         "F4_voice_and_visuals",
-        "F5_delegation_and_risk"
+        "F5_delegation_and_risk",
+        "F6_emergent"
       ]
+    },
+    "dimension": {
+      "type": "string",
+      "description": "Specific seeded or emergent behavioral dimension (e.g. epistemic.abstraction_depth, dialectic.plan_before_code, emergent.tdd_loop)."
     },
     "scope": {
       "type": "string",
@@ -37,6 +42,11 @@
     "status": {
       "type": "string",
       "enum": ["candidate", "graduated", "retired"]
+    },
+    "habit_reflection": {
+      "type": "string",
+      "enum": ["observed_keep", "aspirational_shift", "unreviewed"],
+      "description": "Whether the owner confirmed this observed habit as their desired behavior (observed_keep) or intentionally inverted/tuned it toward an aspirational habit (aspirational_shift)."
     },
     "title": {
       "type": "string",
@@ -73,6 +83,10 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "eval_matcher": {
+      "type": "string",
+      "description": "Optional regular expression used by `imprint eval` to test whether held-out session interventions match this claim."
     },
     "evidence": {
       "type": "array",

@@ -7,11 +7,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sunilgattupalle/imprint-model/internal/collector"
-	"github.com/sunilgattupalle/imprint-model/internal/digest"
-	"github.com/sunilgattupalle/imprint-model/internal/eval"
-	"github.com/sunilgattupalle/imprint-model/internal/gate"
-	"github.com/sunilgattupalle/imprint-model/internal/ingest"
+	"github.com/sunilgattupalle/imprint/internal/collector"
+	"github.com/sunilgattupalle/imprint/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/digest"
+	"github.com/sunilgattupalle/imprint/internal/eval"
+	"github.com/sunilgattupalle/imprint/internal/gate"
+	"github.com/sunilgattupalle/imprint/internal/ingest"
+	"github.com/sunilgattupalle/imprint/internal/link"
 )
 
 type multiFlag []string
@@ -23,16 +25,56 @@ func (m *multiFlag) Set(v string) error {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `imprint: Local-first personal imprint collector, distiller, and validator
+	fmt.Fprintf(os.Stderr, `imprint: First-class personal cognitive, behavioral, and voice imprint CLI (default home: ~/.imprint)
 
 Usage:
-  imprint init     <instance_dir> [--owner-id <id>] [--owner-name <name>] [--sync]
-  imprint add      <instance_dir> [--authored <glob/path>] [--chats <glob/path>] [--prior <path>] [--disallow-term <term>]
-  imprint digest   <instance_dir>
-  imprint validate <instance_dir>
-  imprint eval     <instance_dir>
+  imprint sync     [instance_dir] [--owner-id <id>] [--owner-name <name>] [--link]
+  imprint add      [instance_dir] [--pre-ai <glob/path>] [--authored <glob/path>] [--chats <glob/path>] [--prior <path>] [--disallow-term <term>]
+  imprint link     [instance_dir] [--dry-run]
+  imprint validate [instance_dir]
+  imprint eval     [instance_dir]
+  imprint init     [instance_dir] [--owner-id <id>] [--owner-name <name>] [--sync]
+  imprint digest   [instance_dir]
 `)
 	os.Exit(2)
+}
+
+// parseFlagsWithPositional allows flags to appear either before or after the optional positional instance_dir.
+func parseFlagsWithPositional(fs *flag.FlagSet, args []string, instanceFlag *string) string {
+	var flagArgs []string
+	var positional string
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if strings.HasPrefix(a, "-") {
+			flagArgs = append(flagArgs, a)
+			name := strings.TrimLeft(a, "-")
+			if !strings.Contains(name, "=") {
+				if f := fs.Lookup(name); f != nil {
+					if bf, ok := f.Value.(interface{ IsBoolFlag() bool }); !ok || !bf.IsBoolFlag() {
+						if i+1 < len(args) {
+							i++
+							flagArgs = append(flagArgs, args[i])
+						}
+					}
+				}
+			}
+		} else if positional == "" {
+			positional = a
+		} else {
+			flagArgs = append(flagArgs, a)
+		}
+	}
+	_ = fs.Parse(flagArgs)
+	if *instanceFlag != "" {
+		return *instanceFlag
+	}
+	if positional != "" {
+		return positional
+	}
+	if fs.NArg() > 0 {
+		return fs.Arg(0)
+	}
+	return config.DefaultInstanceDir
 }
 
 func main() {
@@ -41,55 +83,15 @@ func main() {
 	}
 	sub := os.Args[1]
 	switch sub {
-	case "init":
-		fs := flag.NewFlagSet("init", flag.ExitOnError)
-		ownerID := fs.String("owner-id", "", "Short owner identifier")
-		ownerName := fs.String("owner-name", "", "Full owner display name")
-		syncDB := fs.Bool("sync", false, "Run agentsview sync before initializing")
-		instanceFlag := fs.String("instance", "", "Instance directory path")
-		_ = fs.Parse(os.Args[2:])
-		inst := *instanceFlag
-		if inst == "" && fs.NArg() > 0 {
-			inst = fs.Arg(0)
-		}
-		if inst == "" {
-			usage()
-		}
-		if err := collector.InitInstance(inst, *ownerID, *ownerName, *syncDB); err != nil {
+	case "sync":
+		fs := flag.NewFlagSet("sync", flag.ExitOnError)
+		ownerID := fs.String("owner-id", "", "Short owner identifier (auto-discovered if omitted)")
+		ownerName := fs.String("owner-name", "", "Full owner display name (auto-discovered if omitted)")
+		doLink := fs.Bool("link", true, "Automatically link IMPRINT.md into detected coding harnesses if present")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		if err := collector.InitInstance(inst, *ownerID, *ownerName, true); err != nil {
 			fatal(err)
-		}
-
-	case "add":
-		fs := flag.NewFlagSet("add", flag.ExitOnError)
-		var authored, chats, priors, disallow multiFlag
-		fs.Var(&authored, "authored", "Authored document/deck path or glob (.md, .txt, .docx, .pptx, .html)")
-		fs.Var(&chats, "chats", "Exported web chat JSON path or glob")
-		fs.Var(&priors, "prior", "Explicit prior file (CLAUDE.md, AGENTS.md, style.md)")
-		fs.Var(&disallow, "disallow-term", "Workspace/company term disallowed in portable imprint rules")
-		instanceFlag := fs.String("instance", "", "Instance directory path")
-		_ = fs.Parse(os.Args[2:])
-		inst := *instanceFlag
-		if inst == "" && fs.NArg() > 0 {
-			inst = fs.Arg(0)
-		}
-		if inst == "" {
-			usage()
-		}
-		if err := ingest.AddSources(inst, authored, chats, priors, disallow); err != nil {
-			fatal(err)
-		}
-		fmt.Printf("Updated %s/.local/sources.yaml\n", inst)
-
-	case "digest":
-		fs := flag.NewFlagSet("digest", flag.ExitOnError)
-		instanceFlag := fs.String("instance", "", "Instance directory path")
-		_ = fs.Parse(os.Args[2:])
-		inst := *instanceFlag
-		if inst == "" && fs.NArg() > 0 {
-			inst = fs.Arg(0)
-		}
-		if inst == "" {
-			usage()
 		}
 		digestPath, stats, err := digest.BuildDigest(inst)
 		if err != nil {
@@ -98,33 +100,86 @@ func main() {
 		b, _ := json.MarshalIndent(stats, "", "  ")
 		fmt.Println(string(b))
 		fmt.Printf("Wrote synthesis digest -> %s\n", digestPath)
+		if *doLink {
+			if linked, err := link.LinkInstance(inst, "", false); err == nil && len(linked) > 0 {
+				for _, r := range linked {
+					fmt.Printf("  Linked [%s] %s (%s)\n", r.Harness, r.Path, r.Action)
+				}
+			}
+		}
+
+	case "init":
+		fs := flag.NewFlagSet("init", flag.ExitOnError)
+		ownerID := fs.String("owner-id", "", "Short owner identifier")
+		ownerName := fs.String("owner-name", "", "Full owner display name")
+		syncDB := fs.Bool("sync", false, "Run agentsview sync before initializing")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		if err := collector.InitInstance(inst, *ownerID, *ownerName, *syncDB); err != nil {
+			fatal(err)
+		}
+
+	case "add":
+		fs := flag.NewFlagSet("add", flag.ExitOnError)
+		var preAI, authored, chats, priors, disallow multiFlag
+		fs.Var(&preAI, "pre-ai", "Pre-AI / pure-human authored gold manuscript path or glob (.md, .txt, .docx, .pptx, .html)")
+		fs.Var(&authored, "authored", "Authored document/deck path or glob (.md, .txt, .docx, .pptx, .html)")
+		fs.Var(&chats, "chats", "Exported web chat JSON path or glob")
+		fs.Var(&priors, "prior", "Explicit prior file (CLAUDE.md, AGENTS.md, style.md)")
+		fs.Var(&disallow, "disallow-term", "Workspace/company term disallowed in portable imprint rules")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		if err := ingest.AddSources(inst, preAI, authored, chats, priors, disallow); err != nil {
+			fatal(err)
+		}
+		absInst, _, _ := config.ResolveInstancePaths(inst)
+		fmt.Printf("Updated %s/.local/sources.yaml\n", config.ToTildePath(absInst))
+
+	case "digest":
+		fs := flag.NewFlagSet("digest", flag.ExitOnError)
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		digestPath, stats, err := digest.BuildDigest(inst)
+		if err != nil {
+			fatal(err)
+		}
+		b, _ := json.MarshalIndent(stats, "", "  ")
+		fmt.Println(string(b))
+		fmt.Printf("Wrote synthesis digest -> %s\n", digestPath)
+
+	case "link":
+		fs := flag.NewFlagSet("link", flag.ExitOnError)
+		dryRun := fs.Bool("dry-run", false, "Preview harness files that would be linked without writing")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		results, err := link.LinkInstance(inst, "", *dryRun)
+		if err != nil {
+			fatal(err)
+		}
+		for _, r := range results {
+			fmt.Printf("Linked [%s] %s (%s)\n", r.Harness, r.Path, r.Action)
+		}
 
 	case "validate":
 		fs := flag.NewFlagSet("validate", flag.ExitOnError)
-		instanceFlag := fs.String("instance", "", "Instance directory path")
-		_ = fs.Parse(os.Args[2:])
-		inst := *instanceFlag
-		if inst == "" && fs.NArg() > 0 {
-			inst = fs.Arg(0)
-		}
-		if inst == "" {
-			usage()
-		}
+		doLink := fs.Bool("link", true, "Automatically link IMPRINT.md into detected coding harnesses after validation")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
 		if err := gate.ValidateAndExport(inst); err != nil {
 			fatal(err)
+		}
+		if *doLink {
+			if results, err := link.LinkInstance(inst, "", false); err == nil {
+				for _, r := range results {
+					fmt.Printf("  Linked [%s] %s (%s)\n", r.Harness, r.Path, r.Action)
+				}
+			}
 		}
 
 	case "eval":
 		fs := flag.NewFlagSet("eval", flag.ExitOnError)
-		instanceFlag := fs.String("instance", "", "Instance directory path")
-		_ = fs.Parse(os.Args[2:])
-		inst := *instanceFlag
-		if inst == "" && fs.NArg() > 0 {
-			inst = fs.Arg(0)
-		}
-		if inst == "" {
-			usage()
-		}
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
 		if _, err := eval.RunHoldoutEval(inst); err != nil {
 			fatal(err)
 		}

@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sunilgattupalle/imprint-model/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/config"
 	_ "modernc.org/sqlite"
 )
 
@@ -71,16 +71,16 @@ var defaultInlineStripRE = []*regexp.Regexp{
 var timestampLineRE = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}`)
 
 type sessionRow struct {
-	id               string
-	rawUUID          string
-	project          string
-	agent            string
-	effectiveAgent   string
-	startedAt        string
-	messageCount     int
-	parentSessionID  string
-	cwd              string
-	gitBranch        string
+	id              string
+	rawUUID         string
+	project         string
+	agent           string
+	effectiveAgent  string
+	startedAt       string
+	messageCount    int
+	parentSessionID string
+	cwd             string
+	gitBranch       string
 }
 
 type msgRow struct {
@@ -185,53 +185,71 @@ func Build(instanceDir string) (*CorpusStats, error) {
 	}
 
 	dbPath := config.ExpandPath(cfg.SessionArchive.SQLitePath)
-	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?mode=ro", dbPath))
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	labelOverrides := map[string]string{}
-	lRows, err := db.Query(`SELECT session_id, label FROM session_labels WHERE label LIKE 'source=%'`)
-	if err == nil {
-		for lRows.Next() {
-			var sid, lbl string
-			if err := lRows.Scan(&sid, &lbl); err == nil {
-				if parts := strings.SplitN(lbl, "=", 2); len(parts) == 2 {
-					labelOverrides[sid] = parts[1]
-				}
-			}
+	var db *sql.DB
+	if _, statErr := os.Stat(dbPath); statErr == nil {
+		db, err = sql.Open("sqlite", fmt.Sprintf("file:%s?mode=ro", dbPath))
+		if err != nil {
+			db = nil
+		} else {
+			defer db.Close()
 		}
-		lRows.Close()
 	}
 
-	sRows, err := db.Query(`
-		SELECT id, COALESCE(project, ''), COALESCE(agent, ''), COALESCE(started_at, ''),
-		       COALESCE(message_count, 0), COALESCE(parent_session_id, ''),
-		       COALESCE(cwd, ''), COALESCE(git_branch, '')
-		FROM sessions
-		WHERE COALESCE(is_automated, 0) = 0
-	`)
-	if err != nil {
-		return nil, err
-	}
 	var allSessions []sessionRow
 	byUUID := map[string][]sessionRow{}
-	for sRows.Next() {
-		var s sessionRow
-		if err := sRows.Scan(&s.id, &s.project, &s.agent, &s.startedAt, &s.messageCount, &s.parentSessionID, &s.cwd, &s.gitBranch); err != nil {
-			return nil, err
+
+	if db != nil {
+		labelOverrides := map[string]string{}
+		lRows, err := db.Query(`SELECT session_id, label FROM session_labels WHERE label LIKE 'source=%'`)
+		if err == nil {
+			for lRows.Next() {
+				var sid, lbl string
+				if err := lRows.Scan(&sid, &lbl); err == nil {
+					if parts := strings.SplitN(lbl, "=", 2); len(parts) == 2 {
+						labelOverrides[sid] = parts[1]
+					}
+				}
+			}
+			lRows.Close()
 		}
-		s.rawUUID = extractRawUUID(s.id)
-		if ov, ok := labelOverrides[s.id]; ok {
-			s.effectiveAgent = ov
-		} else {
-			s.effectiveAgent = s.agent
+
+		sRows, err := db.Query(`
+			SELECT id, COALESCE(project, ''), COALESCE(agent, ''), COALESCE(started_at, ''),
+			       COALESCE(message_count, 0), COALESCE(parent_session_id, ''),
+			       COALESCE(cwd, ''), COALESCE(git_branch, '')
+			FROM sessions
+			WHERE COALESCE(is_automated, 0) = 0
+		`)
+		if err == nil {
+			for sRows.Next() {
+				var s sessionRow
+				if err := sRows.Scan(&s.id, &s.project, &s.agent, &s.startedAt, &s.messageCount, &s.parentSessionID, &s.cwd, &s.gitBranch); err != nil {
+					continue
+				}
+				s.rawUUID = extractRawUUID(s.id)
+				if ov, ok := labelOverrides[s.id]; ok {
+					s.effectiveAgent = ov
+				} else {
+					s.effectiveAgent = s.agent
+				}
+				allSessions = append(allSessions, s)
+				byUUID[s.rawUUID] = append(byUUID[s.rawUUID], s)
+			}
+			sRows.Close()
 		}
-		allSessions = append(allSessions, s)
-		byUUID[s.rawUUID] = append(byUUID[s.rawUUID], s)
 	}
-	sRows.Close()
+
+	// Merge any native on-disk sessions (Auggie, Pi, OMP, Claude) not yet in sessions.db
+	var nativeByUUID map[string]nativeSession
+	if cfg.SessionArchive.SQLitePath == "~/.agentsview/sessions.db" || cfg.SessionArchive.SQLitePath == "" {
+		nativeByUUID = scanNativeStores()
+		for rawUUID, ns := range nativeByUUID {
+			if _, inDB := byUUID[rawUUID]; !inDB {
+				allSessions = append(allSessions, ns.row)
+				byUUID[rawUUID] = append(byUUID[rawUUID], ns.row)
+			}
+		}
+	}
 
 	var canonical []sessionRow
 	dedupDropped := 0
@@ -301,21 +319,29 @@ func Build(instanceDir string) (*CorpusStats, error) {
 
 	for _, s := range canonical {
 		holdout := isHoldout(s.rawUUID, cfg.Hygiene.HoldoutRatio)
-		mRows, err := db.Query(`
-			SELECT ordinal, COALESCE(role, ''), COALESCE(content, ''), COALESCE(timestamp, '')
-			FROM messages WHERE session_id = ? ORDER BY ordinal ASC
-		`, s.id)
-		if err != nil {
-			continue
-		}
 		var msgs []msgRow
-		for mRows.Next() {
-			var m msgRow
-			if err := mRows.Scan(&m.ordinal, &m.role, &m.content, &m.timestamp); err == nil {
-				msgs = append(msgs, m)
+		if ns, ok := nativeByUUID[s.rawUUID]; ok && db == nil {
+			msgs = ns.messages
+		} else if db != nil {
+			mRows, err := db.Query(`
+				SELECT ordinal, COALESCE(role, ''), COALESCE(content, ''), COALESCE(timestamp, '')
+				FROM messages WHERE session_id = ? ORDER BY ordinal ASC
+			`, s.id)
+			if err == nil {
+				for mRows.Next() {
+					var m msgRow
+					if err := mRows.Scan(&m.ordinal, &m.role, &m.content, &m.timestamp); err == nil {
+						msgs = append(msgs, m)
+					}
+				}
+				mRows.Close()
+			}
+			if len(msgs) == 0 {
+				if ns, ok := nativeByUUID[s.rawUUID]; ok {
+					msgs = ns.messages
+				}
 			}
 		}
-		mRows.Close()
 
 		keptInSession := 0
 		for i, m := range msgs {

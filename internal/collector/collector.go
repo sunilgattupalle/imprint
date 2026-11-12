@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 
-	"github.com/sunilgattupalle/imprint-model/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/config"
 	_ "modernc.org/sqlite"
 )
 
@@ -72,11 +74,12 @@ func InitInstance(instanceDir string, ownerID, ownerName string, runSync bool) e
 	// Create .local/sources.yaml if it does not exist yet
 	sourcesPath := filepath.Join(localDir, "sources.yaml")
 	if _, err := os.Stat(sourcesPath); os.IsNotExist(err) {
+		autoID, autoName := discoverOwner(absInstance)
 		if ownerID == "" {
-			ownerID = filepath.Base(absInstance)
+			ownerID = autoID
 		}
 		if ownerName == "" {
-			ownerName = ownerID
+			ownerName = autoName
 		}
 		priors := discoverExplicitPriors()
 		cfg := &config.SourcesConfig{
@@ -93,17 +96,17 @@ func InitInstance(instanceDir string, ownerID, ownerName string, runSync bool) e
 			Hygiene: config.HygieneConfig{
 				HoldoutRatio: 0.20,
 				ExtraRejectPatterns: []config.NamedRegex{
-					{Name: "cosmos_events", Regex: `^\s*<cosmos-events\b`},
+					{Name: "event_bus_envelope", Regex: `^\s*<[a-z0-9_-]+-events\b`},
 				},
 				ExtraInlineStripRegexes: []string{
-					`<cosmos-events\b[^>]*>.*?</cosmos-events>`,
+					`<[a-z0-9_-]+-events\b[^>]*>.*?</[a-z0-9_-]+-events>`,
 				},
 			},
 		}
 		if err := config.SaveSources(localDir, cfg); err != nil {
 			return err
 		}
-		fmt.Printf("Created %s (discovered %d explicit prior files)\n", sourcesPath, len(priors))
+		fmt.Printf("Created %s (owner=%s, discovered %d explicit prior files)\n", sourcesPath, ownerID, len(priors))
 	} else {
 		fmt.Printf("Using existing %s\n", sourcesPath)
 	}
@@ -125,6 +128,8 @@ func findAgentsView() (string, error) {
 	return "", fmt.Errorf("agentsview binary not found")
 }
 
+var piDirsLineRE = regexp.MustCompile(`(?m)^pi_dirs\s*=\s*\[[^\]]*\]`)
+
 func ensureAuggiePiDirs() error {
 	auggieDir := config.ExpandPath("~/.augment/sessions-v2")
 	if _, err := os.Stat(auggieDir); os.IsNotExist(err) {
@@ -139,8 +144,12 @@ func ensureAuggiePiDirs() error {
 	if strings.Contains(content, ".augment/sessions-v2") {
 		return nil
 	}
-	line := "pi_dirs = [\"~/.pi/agent/sessions\", \"~/.augment/sessions-v2\"]\n"
-	return os.WriteFile(cfgPath, []byte(line+content), 0o644)
+	line := `pi_dirs = ["~/.pi/agent/sessions", "~/.augment/sessions-v2"]`
+	if piDirsLineRE.MatchString(content) {
+		updated := piDirsLineRE.ReplaceAllString(content, line)
+		return os.WriteFile(cfgPath, []byte(updated), 0o644)
+	}
+	return os.WriteFile(cfgPath, []byte(line+"\n"+content), 0o644)
 }
 
 func labelAuggieSessions(dbPath string) error {
@@ -158,17 +167,55 @@ func labelAuggieSessions(dbPath string) error {
 	return err
 }
 
+func discoverOwner(absInstance string) (id string, name string) {
+	if u, err := user.Current(); err == nil {
+		if u.Username != "" {
+			id = strings.ToLower(strings.ReplaceAll(u.Username, ".", "-"))
+		}
+		if u.Name != "" {
+			name = u.Name
+		}
+	}
+	if out, err := exec.Command("git", "config", "user.name").Output(); err == nil {
+		if gName := strings.TrimSpace(string(out)); gName != "" {
+			name = gName
+		}
+	}
+	if id == "" {
+		base := strings.TrimPrefix(filepath.Base(absInstance), ".")
+		if base == "" || base == "imprint" {
+			id = "builder"
+		} else {
+			id = base
+		}
+	}
+	if name == "" {
+		name = id
+	}
+	return id, name
+}
+
 func discoverExplicitPriors() []string {
-	candidates := []string{
+	staticCandidates := []string{
 		"~/.claude/CLAUDE.md",
-		"~/personal-ai/writing-style/style.md",
-		"~/personal-ai/presentation-style/style.md",
-		"~/personal-ai/prototype-style/style.md",
+		"~/.pi/agent/AGENTS.md",
+		"~/.omp/agent/AGENTS.md",
+		"~/.config/opencode/AGENTS.md",
 	}
 	var found []string
-	for _, c := range candidates {
+	seen := map[string]bool{}
+	for _, c := range staticCandidates {
 		if _, err := os.Stat(config.ExpandPath(c)); err == nil {
+			seen[c] = true
 			found = append(found, c)
+		}
+	}
+	styleMatches, _ := filepath.Glob(config.ExpandPath("~/personal-ai/*/style.md"))
+	for _, m := range styleMatches {
+		tilde := config.ToTildePath(m)
+		if !seen[tilde] {
+			seen[tilde] = true
+			found = append(found, tilde)
 		}
 	}
 	return found

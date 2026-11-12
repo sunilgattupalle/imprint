@@ -9,31 +9,34 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sunilgattupalle/imprint-model/internal/config"
-	"github.com/sunilgattupalle/imprint-model/internal/corpus"
-	"github.com/sunilgattupalle/imprint-model/internal/gate"
+	"github.com/sunilgattupalle/imprint/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/corpus"
+	"github.com/sunilgattupalle/imprint/internal/gate"
 )
 
+// signalRE identifies imprint-eligible directive and corrective turns in held-out sessions
+// (epistemic framing, dialectical pushback, compression/structure, prose/visual taste, and delegation/autonomy),
+// excluding routine code-bug fixes.
 var signalRE = regexp.MustCompile(`(?i)(` +
-	`\bdon't just\b|\bdon't make it\b|\bdon't overwrite\b|\bdo not use\b|\bstop updating\b|\bwhat is wrong\b|\bwhat the hell\b|` +
-	`\bconcise\b|\bprecise\b|\bno ai fluff\b|\bover-?complicat|\bover-?correct|\btoo concise\b|\btoo big\b|` +
-	`\bmental model\b|\bprimitive\b|\bconstruct\b|\bfirst principles\b|\bsource of truth\b|\brubric\b|\bground truth\b|\bindependent doc\b|` +
-	`\bhonest\b|\bstress test\b|\bwhat do you think\b|\bask opus\b|\bopus 5\b|\bam i conflating\b|\breview this thoroughly\b|` +
-	`\bwrite -?v\d\b|\bevolution till v\d\b|\bseparate slide\b|` +
-	`\buse svg\b|\bfix all the ascii\b|\buse ascii diagrams\b|\bvisually\b|\bvisual report\b|\btoo many colors\b|\btoo much text\b|` +
-	`\bautonomy\b|\buse my identity\b|\bworkload identity\b|\btrust .*-issued identity\b|\bdispatches an event\b|\bcome back to resume\b|` +
-	`\buse my writing style\b|\brephrase the whole thing\b|\bopening line\b` +
+	`\bdon'?t just\b|\bdon'?t make it\b|\bdon'?t overwrite\b|\bdo not use\b|\bstop (?:updating|overwriting|using|adding)\b|` +
+	`\bconcise\b|\bterse\b|\bprecise\b|\bfluff\b|\bover-?complicat|\bover-?correct|\btoo concise\b|\btoo big\b|\btoo long\b|\btoo verbose\b|` +
+	`\bmental model\b|\bprimitive\b|\bconstruct\b|\bfirst principles\b|\bsource of truth\b|\brubric\b|\bground truth\b|\binvariant\b|\bindependent doc\b|` +
+	`\bhonest\b|\bstress[- ]test\b|\bwhat do you think\b|\bpoke holes\b|\bcritique\b|\bam i conflating\b|\breview this thoroughly\b|\btrade-?offs?\b|\bdesign first\b|` +
+	`\bwrite -?v\d\b|\bevolution till v\d\b|\bseparate (?:slide|doc|file)\b|\bone-?pager\b|\bexecutive summary\b|` +
+	`\buse svg\b|\bfix all the ascii\b|\buse ascii diagrams\b|\bvisually\b|\bvisual report\b|\btoo many colors\b|\bpalette\b|\btoo much text\b|` +
+	`\bautonom\b|\buse my identity\b|\bworkload identity\b|\btrust .*-issued identity\b|\bnever merge\b|\bdon'?t merge\b|\bdispatches an event\b|\bcome back to resume\b|\bevent[- ]driven\b|` +
+	`\bwriting style\b|\bmy tone\b|\bmy voice\b|\brephrase the whole thing\b|\bopening line\b` +
 	`)`)
 
 type EvalResults struct {
-	Instance                  string         `json:"instance"`
-	HoldoutSignalTurns        int            `json:"holdout_signal_turns"`
-	CoveredByL1Portable       int            `json:"covered_by_L1_portable_imprint"`
-	L1CoverageRate            float64        `json:"L1_coverage_rate"`
-	CoveredByL1OrL2L3         int            `json:"covered_by_L1_or_L2_L3"`
-	TotalCoverageRate         float64        `json:"total_coverage_rate"`
-	HitsPerL1Claim            map[string]int `json:"hits_per_L1_claim"`
-	HitsPerDemotedRule        map[string]int `json:"hits_per_demoted_rule"`
+	Instance            string         `json:"instance"`
+	HoldoutSignalTurns  int            `json:"holdout_signal_turns"`
+	CoveredByL1Portable int            `json:"covered_by_L1_portable_imprint"`
+	L1CoverageRate      float64        `json:"L1_coverage_rate"`
+	CoveredByL1OrL2L3   int            `json:"covered_by_L1_or_L2_L3"`
+	TotalCoverageRate   float64        `json:"total_coverage_rate"`
+	HitsPerL1Claim      map[string]int `json:"hits_per_L1_claim"`
+	HitsPerDemotedRule  map[string]int `json:"hits_per_demoted_rule"`
 }
 
 // RunHoldoutEval evaluates L1 portable claims against untouched holdout_turns.jsonl.

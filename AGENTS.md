@@ -1,21 +1,20 @@
-# AGENTS.md: `imprint-model`
+# AGENTS.md: `imprint`
 
 This repository contains the **person-agnostic model, schemas, Go CLI (`imprint`), and Agent Skill (`SKILL.md`)** for building a portable personal imprint.
 
 ## 1. If the User Asks You to Build or Refresh Their Imprint
 
-Follow [`SKILL.md`](./SKILL.md) step by step:
-1. Run `imprint init <instance_dir> --owner-id <id> --owner-name "<Name>" --sync`.
-2. Ask the user which authored documents/decks (`S2`) and disallowed company/workspace terms to register, fetch any remote pages (Confluence/Notion/GitHub) via MCP into `<instance_dir>/.local/authored/`, and register local files via `imprint add`.
-3. Run `imprint digest <instance_dir>` to produce `<instance_dir>/.local/corpus/digest.md`.
-4. Synthesize `.local/evidence_ledger.json`, `.local/demoted_non_imprint.json`, `.local/WORKSPACE.md`, `IMPRINT.md`, and `overlays/`.
-5. Run `imprint validate <instance_dir>` and `imprint eval <instance_dir>`.
+Follow [`SKILL.md`](./SKILL.md) step by step (all commands default to `~/.imprint` when `[instance_dir]` is omitted):
+1. Ask the user for any pre-AI writings (`--pre-ai`), authored documents/decks (`--authored`), and disallowed company/workspace terms (`--disallow-term`), fetch remote pages (Confluence/Notion/GitHub) via MCP into `~/.imprint/.local/authored/`, and register local files via `imprint add`.
+2. Run `imprint sync` to initialize `~/.imprint`, sync sessions, deduplicate turns, and produce `~/.imprint/.local/corpus/digest.md`.
+3. Synthesize `.local/evidence_ledger.json` (across `F1`–`F5` seeded facets + `F6_emergent` clusters), `.local/demoted_non_imprint.json`, `.local/WORKSPACE.md`, `IMPRINT.md`, and `overlays/`.
+4. Run the Habit Reflection check with the user (`observed_keep` vs. `aspirational_shift`), then run `imprint validate` (which also auto-links all local coding harnesses) and `imprint eval`.
 
-**Never write personal or company data into this (`imprint-model`) repository.** All personal instances live in their own directory outside this repo.
+**Never write personal or company data into this (`imprint`) repository.** All personal instances live in `~/.imprint` (or another directory outside this repo).
 
 ---
 
-## 2. If You Are Modifying `imprint-model` Itself
+## 2. If You Are Modifying `imprint` Itself
 
 ### Non-Negotiable Invariants
 1. **Zero personal or company leakage:** Never commit a real person's name, session UUID, verbatim transcript quote, or company/repo proper noun into code, tests, docs, or schemas. Use generic placeholders (`alice`, `project_alpha`, `InternalSQL`) in tests and examples.

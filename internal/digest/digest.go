@@ -10,47 +10,65 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sunilgattupalle/imprint-model/internal/config"
-	"github.com/sunilgattupalle/imprint-model/internal/corpus"
-	"github.com/sunilgattupalle/imprint-model/internal/ingest"
+	"github.com/sunilgattupalle/imprint/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/corpus"
+	"github.com/sunilgattupalle/imprint/internal/ingest"
 )
 
-type facetprobe struct {
-	id    string
-	title string
-	re    *regexp.Regexp
+type facetProbe struct {
+	id             string
+	title          string
+	seedDimensions string
+	re             *regexp.Regexp
 }
 
-var facetProbes = []facetprobe{
+// Person-agnostic conversational-act and dimension probes across the 5 seeded facets.
+var facetProbes = []facetProbe{
 	{
-		"F1_epistemic_posture",
-		"F1: Epistemic Posture (Primitives, Single Source of Truth, Provenance, Rubrics, Economics)",
-		regexp.MustCompile(`(?i)\b(primitive|construct|first principles|source of truth|ontology|abstraction|rubric|ground truth|inferred|observed|provenance|independent doc|tok/s|cohorts?)\b`),
+		id:             "F1_epistemic_posture",
+		title:          "F1: Epistemic Posture (First Principles, Abstractions, Evidence & Verification Bar, Economics)",
+		seedDimensions: "epistemic.abstraction_depth, epistemic.single_source_of_truth, epistemic.verification_bar, epistemic.unit_economics",
+		re:             regexp.MustCompile(`(?i)\b(first principles|primitive|construct|source of truth|canonical|ontology|abstraction|schema|invariant|rubric|ground truth|inferred|observed|provenance|benchmark|baseline|metric|unit economics|cost|latency|throughput|verify|root cause|assumption)\b`),
 	},
 	{
-		"F2_dialectical_style",
-		"F2: Dialectical Style (Stress-Testing, Anti-Sycophancy, Mental Model Before Code, Cross-Model Critique)",
-		regexp.MustCompile(`(?i)\b(don't just agree|stress test|honest|what do you think|am i conflating|mental model|let's first talk|before you implement|ask opus|opus 5|overcomplicat)\b`),
+		id:             "F2_dialectical_style",
+		title:          "F2: Dialectical Style (Stress-Testing, Anti-Sycophancy, Mental Model Before Code, Trade-off Framing)",
+		seedDimensions: "dialectic.challenge_threshold, dialectic.plan_before_code, dialectic.option_comparison, dialectic.lock_in_flip",
+		re:             regexp.MustCompile(`(?i)\b(don'?t just agree|stress[- ]test|honest|what do you think|poke holes|devil'?s advocate|critique|disagree|conflating|mental model|before (?:you |we )?(?:implement|write|code)|let'?s (?:first )?(?:discuss|talk|align)|design first|trade-?offs?|options?|over-?complicat|simpler)\b`),
 	},
 	{
-		"F3_compression_and_structure",
-		"F3: Compression & Structure (Compression Asymmetry, Companion Docs, Progressive Depth, -v2 Iteration)",
-		regexp.MustCompile(`(?i)\b(concise|no ai fluff|too concise|compressed this too much|over-?correct|write -?v\d|don't overwrite|separate slide|no timelines|different tracks|what's next)\b`),
+		id:             "F3_compression_and_structure",
+		title:          "F3: Compression & Structure (Compression Asymmetry, Document Architecture, Revision Mechanics)",
+		seedDimensions: "structure.compression_asymmetry, structure.opening_move, structure.progressive_depth, structure.revision_mechanics",
+		re:             regexp.MustCompile(`(?i)\b(concise|terse|brief|too long|too verbose|too concise|compressed .* too much|fluff|bloat|over-?correct|don'?t overwrite|new file|version|-v\d|separate (?:doc|slide|file)|table|matrix|progressive|section|executive summary|one-?pager|deep dive)\b`),
 	},
 	{
-		"F4_voice_and_visuals",
-		"F4: Voice & Visual Signature (CTO Prose, Banned Phrases, Color Restraint, SVG vs. ASCII)",
-		regexp.MustCompile(`(?i)\b(load-bearing|the hypothesis|write it like i would|my tone|my writing style|too many colors|glaring colors|use svg|fix all the ascii|use ascii diagrams|visually)\b`),
+		id:             "F4_voice_and_visuals",
+		title:          "F4: Voice & Visual Signature (Prose Cadence, Banned Clichés, Palette Restraint, Diagram Medium)",
+		seedDimensions: "voice.prose_cadence, voice.lexical_bans, visuals.palette_restraint, visuals.diagram_medium",
+		re:             regexp.MustCompile(`(?i)\b(my tone|my voice|writing style|write it like|rephrase|rewrite|plainly|buzzword|cliche|em-?dash|opening line|contrast|too many colors|glaring|palette|dark mode|light mode|svg|ascii|mermaid|diagram|chart|layout|typography|font|visually)\b`),
 	},
 	{
-		"F5_delegation_and_risk",
-		"F5: Delegation & Risk Appetite (Governed Autonomy, Author Identity, Git Pull Main, Event-Driven Loops)",
-		regexp.MustCompile(`(?i)\b(autonomy|git pull on main|use my identity|sole approver|event driven|webhook|dispatches an event|come back to resume)\b`),
+		id:             "F5_delegation_and_risk",
+		title:          "F5: Delegation & Risk Appetite (Autonomy Gates, Blast Radius, Git & Identity, Continuation Model)",
+		seedDimensions: "delegation.blast_radius_gate, delegation.merge_ownership, delegation.git_and_identity, delegation.continuation_model",
+		re:             regexp.MustCompile(`(?i)\b(autonom|permission|ask before|confirm before|sole approver|never merge|don'?t merge|don'?t push|don'?t commit|git pull|branch|worktree|author|identity|destructive|production|rollback|event[- ]driven|webhook|background|subagent|parallel)\b`),
 	},
 }
+
+// Friction / correction detector (ported from agentsview/internal/friction/detect_corrections.go)
+// to catch emergent user habits & corrections that don't match the 5 seeded facet probes.
+var generalCorrectionRE = regexp.MustCompile(`(?i)(` +
+	`^no[,.! ]|` +
+	`\bdon'?t\b|\bdo not\b|\bnever\b|\balways\b|\bplease stop\b|` +
+	`\bstop (?:doing|replying|posting|answering|sending|using|adding|changing|updating|overwriting)\b|` +
+	`\bwrong\b|\bincorrect\b|\bnot (?:that|what|like that|right|the right)\b|` +
+	`\bshould(?:n'?t| not| never)\b|\bthat'?s not\b|\binstead of\b|\bwhy did you\b|\bi prefer\b` +
+	`)`)
 
 // BuildDigest runs the corpus hygiene pipeline and generates `<instance>/.local/corpus/digest.md`
-// (~15-25k tokens) combining S1 clustered session signals, S2 authored docs, and S3 explicit priors.
+// combining S1 clustered session signals (seeded facets + emergent corrections), S2 authored docs
+// (with Pre-AI Pure-Human Voice Gold separated), and S3 explicit priors.
 func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	_, localDir, err := config.ResolveInstancePaths(instanceDir)
 	if err != nil {
@@ -68,7 +86,7 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 
 	var md strings.Builder
 	md.WriteString(fmt.Sprintf("# Imprint Extraction Digest: %s (`%s`)\n\n", cfg.Owner.Name, cfg.Owner.ID))
-	md.WriteString("> **Local-only synthesis input (`.local/corpus/digest.md`).** Read this file to synthesize `.local/evidence_ledger.json`, `.local/demoted_non_imprint.json`, `IMPRINT.md`, and `overlays/`.\n\n")
+	md.WriteString("> **Local-only synthesis input (`.local/corpus/digest.md`).** Read this file to synthesize `.local/evidence_ledger.json`, `.local/demoted_non_imprint.json`, `.local/WORKSPACE.md`, `IMPRINT.md`, and `overlays/`.\n\n")
 
 	// 1. Corpus Summary
 	md.WriteString("## 1. Corpus & Hygiene Summary (S1)\n\n")
@@ -87,8 +105,32 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 		md.WriteString(fmt.Sprintf("### Prior: `%s`\n\n```markdown\n%s\n```\n\n", p, clipText(doc.Text, 3500)))
 	}
 
-	// 3. S2 Authored Ground-Truth Artifacts
+	// 3. S2 Authored Ground-Truth Artifacts (Separated into 3A Pre-AI Gold vs. 3B General Authored)
 	md.WriteString("## 3. Authored Ground-Truth Artifacts (S2)\n\n")
+	seenPath := map[string]bool{}
+
+	var preAIPaths []string
+	for _, g := range cfg.AuthoredArtifacts.PreAIGlobs {
+		matches, _ := filepath.Glob(config.ExpandPath(g))
+		preAIPaths = append(preAIPaths, matches...)
+	}
+	sort.Strings(preAIPaths)
+	if len(preAIPaths) > 0 {
+		md.WriteString("### 3A. Pre-AI / Pure-Human Voice Gold (`--pre-ai` — Highest Priority for F4 Voice & Thought Identity)\n\n")
+		for _, p := range preAIPaths {
+			if seenPath[p] {
+				continue
+			}
+			seenPath[p] = true
+			doc, err := ingest.ExtractDocument(p)
+			if err != nil {
+				continue
+			}
+			md.WriteString(fmt.Sprintf("#### [PRE-AI GOLD] (`%s`): `%s`\n\n", doc.Format, filepath.Base(p)))
+			md.WriteString(fmt.Sprintf("```text\n%s\n```\n\n", clipTextStratified(doc.Text, 3200)))
+		}
+	}
+
 	var authoredPaths []string
 	for _, g := range cfg.AuthoredArtifacts.Globs {
 		matches, _ := filepath.Glob(config.ExpandPath(g))
@@ -98,7 +140,6 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	authoredPaths = append(authoredPaths, localAuthored...)
 	sort.Strings(authoredPaths)
 
-	seenPath := map[string]bool{}
 	for _, p := range authoredPaths {
 		if seenPath[p] {
 			continue
@@ -112,11 +153,11 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 		if len(doc.CSSTokens) > 0 {
 			md.WriteString("**Extracted CSS Tokens:** `" + strings.Join(doc.CSSTokens, "`, `") + "`\n\n")
 		}
-		md.WriteString(fmt.Sprintf("```text\n%s\n```\n\n", clipText(doc.Text, 2200)))
+		md.WriteString(fmt.Sprintf("```text\n%s\n```\n\n", clipTextStratified(doc.Text, 2600)))
 	}
 
 	// 4. Clustered High-Signal Training Turns (S1)
-	md.WriteString("## 4. High-Signal Training Turns Clustered by Facet (S1, 80% Train Split Only)\n\n")
+	md.WriteString("## 4. High-Signal Training Turns by Seeded Facet + Emergent Clusters (S1, 80% Train Split Only)\n\n")
 	trainPath := filepath.Join(localDir, "corpus/train_turns.jsonl")
 	f, err := os.Open(trainPath)
 	if err != nil {
@@ -125,6 +166,7 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	defer f.Close()
 
 	byFacet := map[string][]corpus.TurnRecord{}
+	var emergentTurns []corpus.TurnRecord
 	seenTurn := map[string]bool{}
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
@@ -133,7 +175,7 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 		if err := json.Unmarshal(sc.Bytes(), &rec); err != nil {
 			continue
 		}
-		if rec.UserChars < 20 || rec.UserChars > 650 {
+		if rec.UserChars < 20 || rec.UserChars > 750 {
 			continue
 		}
 		if strings.HasPrefix(rec.UserText, "{") {
@@ -143,33 +185,35 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 		if seenTurn[dedupKey] {
 			continue
 		}
+		matchedSeed := false
 		for _, fp := range facetProbes {
 			if fp.re.MatchString(rec.UserText) {
-				seenTurn[dedupKey] = true
+				matchedSeed = true
 				byFacet[fp.id] = append(byFacet[fp.id], rec)
 			}
+		}
+		if matchedSeed {
+			seenTurn[dedupKey] = true
+		} else if generalCorrectionRE.MatchString(rec.UserText) && rec.UserChars <= 400 {
+			seenTurn[dedupKey] = true
+			emergentTurns = append(emergentTurns, rec)
 		}
 	}
 
 	for _, fp := range facetProbes {
-		turns := byFacet[fp.id]
-		md.WriteString(fmt.Sprintf("### %s (%d candidate turns)\n\n", fp.title, len(turns)))
-		limit := 35
-		if len(turns) < limit {
-			limit = len(turns)
-		}
-		for i := 0; i < limit; i++ {
-			t := turns[i]
-			date := t.Timestamp
-			if len(date) >= 10 {
-				date = date[:10]
-			}
-			oneLine := strings.ReplaceAll(t.UserText, "\n", " ")
-			md.WriteString(fmt.Sprintf("- `[%s | %s | %s | #%d]` (%s): %q\n",
-				date, t.Agent, t.Project, t.Ordinal, t.SessionID, oneLine))
-		}
+		turns := diversifyTurns(byFacet[fp.id], 35)
+		md.WriteString(fmt.Sprintf("### %s (%d candidate turns)\n", fp.title, len(byFacet[fp.id])))
+		md.WriteString(fmt.Sprintf("- **Seeded dimensions:** `%s`\n\n", fp.seedDimensions))
+		writeTurnBullets(&md, turns)
 		md.WriteString("\n")
 	}
+
+	// 4.6 Emergent / Unclustered Corrections & Directives
+	emergentSample := diversifyTurns(emergentTurns, 30)
+	md.WriteString(fmt.Sprintf("### FX: Emergent / Unclustered Corrections & Directives (%d candidate turns)\n", len(emergentTurns)))
+	md.WriteString("- **Purpose:** High-signal user corrections and preferences not matched by the 5 seeded probes. Cluster recurring patterns here into either `F1`–`F5` or `F6_emergent` claims.\n\n")
+	writeTurnBullets(&md, emergentSample)
+	md.WriteString("\n")
 
 	digestPath := filepath.Join(localDir, "corpus/digest.md")
 	if err := os.WriteFile(digestPath, []byte(md.String()), 0o644); err != nil {
@@ -178,10 +222,85 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	return digestPath, stats, nil
 }
 
+func writeTurnBullets(md *strings.Builder, turns []corpus.TurnRecord) {
+	for _, t := range turns {
+		date := t.Timestamp
+		if len(date) >= 10 {
+			date = date[:10]
+		}
+		oneLine := strings.ReplaceAll(t.UserText, "\n", " ")
+		if t.PrevAssistantSnippet != "" {
+			prev := strings.ReplaceAll(t.PrevAssistantSnippet, "\n", " ")
+			if len(prev) > 140 {
+				prev = prev[:140] + "..."
+			}
+			md.WriteString(fmt.Sprintf("- `[%s | %s | %s | #%d]` (%s)\n  - *Context:* %q\n  - *User:* %q\n",
+				date, t.Agent, t.Project, t.Ordinal, t.SessionID, prev, oneLine))
+		} else {
+			md.WriteString(fmt.Sprintf("- `[%s | %s | %s | #%d]` (%s): %q\n",
+				date, t.Agent, t.Project, t.Ordinal, t.SessionID, oneLine))
+		}
+	}
+}
+
+// diversifyTurns selects up to limit turns round-robin across distinct projects and sessions
+// so a single long session does not crowd out evidence from other projects.
+func diversifyTurns(turns []corpus.TurnRecord, limit int) []corpus.TurnRecord {
+	if len(turns) <= limit {
+		return turns
+	}
+	byProject := map[string][]corpus.TurnRecord{}
+	var projects []string
+	for _, t := range turns {
+		p := t.Project
+		if p == "" {
+			p = "unassigned"
+		}
+		if _, exists := byProject[p]; !exists {
+			projects = append(projects, p)
+		}
+		byProject[p] = append(byProject[p], t)
+	}
+	sort.Strings(projects)
+
+	var out []corpus.TurnRecord
+	idx := 0
+	for len(out) < limit {
+		added := false
+		for _, p := range projects {
+			bucket := byProject[p]
+			if idx < len(bucket) {
+				out = append(out, bucket[idx])
+				added = true
+				if len(out) >= limit {
+					break
+				}
+			}
+		}
+		if !added {
+			break
+		}
+		idx++
+	}
+	return out
+}
+
 func clipText(s string, maxChars int) string {
 	s = strings.TrimSpace(s)
 	if len(s) <= maxChars {
 		return s
 	}
 	return s[:maxChars] + "\n... [truncated for digest]"
+}
+
+// clipTextStratified preserves the opening, middle, and closing sections of a long document
+// so structural endings, conclusions, and slide summaries are not lost to head-only truncation.
+func clipTextStratified(s string, maxChars int) string {
+	s = strings.TrimSpace(s)
+	if len(s) <= maxChars {
+		return s
+	}
+	headLen := (maxChars * 6) / 10
+	tailLen := maxChars - headLen
+	return s[:headLen] + "\n\n... [middle section elided for digest] ...\n\n" + s[len(s)-tailLen:]
 }

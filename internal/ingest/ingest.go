@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sunilgattupalle/imprint-model/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/config"
 )
 
 type ExtractedDoc struct {
@@ -150,16 +150,17 @@ func extractZipXMLText(zipPath string, matchEntry func(string) bool) (string, er
 	return strings.TrimSpace(out.String()), nil
 }
 
-// AddSources updates `<instance>/.local/sources.yaml` with new authored globs, chat exports, priors, or disallowed terms.
-func AddSources(instanceDir string, authored, chats, priors, disallowTerms []string) error {
+// AddSources updates `<instance>/.local/sources.yaml` with new pre-AI or authored globs, chat exports, priors, or disallowed terms.
+func AddSources(instanceDir string, preAI, authored, chats, priors, disallowTerms []string) error {
 	_, localDir, err := config.ResolveInstancePaths(instanceDir)
 	if err != nil {
 		return err
 	}
 	cfg, err := config.LoadSources(localDir)
 	if err != nil {
-		return fmt.Errorf("failed to load %s/sources.yaml (run `imprint init` first): %w", localDir, err)
+		return fmt.Errorf("failed to load %s/sources.yaml (run `imprint sync` or `imprint init` first): %w", localDir, err)
 	}
+	cfg.AuthoredArtifacts.PreAIGlobs = config.AppendUnique(cfg.AuthoredArtifacts.PreAIGlobs, preAI...)
 	cfg.AuthoredArtifacts.Globs = config.AppendUnique(cfg.AuthoredArtifacts.Globs, authored...)
 	cfg.ChatGPTExports.Globs = config.AppendUnique(cfg.ChatGPTExports.Globs, chats...)
 	cfg.ExplicitPriors.Files = config.AppendUnique(cfg.ExplicitPriors.Files, priors...)

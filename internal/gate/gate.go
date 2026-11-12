@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sunilgattupalle/imprint-model/internal/config"
+	"github.com/sunilgattupalle/imprint/internal/config"
 )
 
 type AdmissionTests struct {
@@ -35,8 +35,10 @@ type CounterEvidenceItem struct {
 type RawClaim struct {
 	ID                string                `json:"id"`
 	Facet             string                `json:"facet"`
+	Dimension         string                `json:"dimension,omitempty"`
 	Scope             string                `json:"scope"`
 	Status            string                `json:"status"`
+	HabitReflection   string                `json:"habit_reflection,omitempty"`
 	Title             string                `json:"title"`
 	PortableRule      string                `json:"portable_rule"`
 	AdmissionTests    AdmissionTests        `json:"admission_tests"`
@@ -66,8 +68,10 @@ type ProvenanceCounts struct {
 type PublicClaim struct {
 	ID               string           `json:"id"`
 	Facet            string           `json:"facet"`
+	Dimension        string           `json:"dimension,omitempty"`
 	Scope            string           `json:"scope"`
 	Status           string           `json:"status"`
+	HabitReflection  string           `json:"habit_reflection,omitempty"`
 	Title            string           `json:"title"`
 	PortableRule     string           `json:"portable_rule"`
 	AdmissionTests   AdmissionTests   `json:"admission_tests"`
@@ -88,9 +92,30 @@ var validFacets = map[string]bool{
 	"F3_compression_and_structure": true,
 	"F4_voice_and_visuals":         true,
 	"F5_delegation_and_risk":       true,
+	"F6_emergent":                  true,
 }
 
-var idPattern = regexp.MustCompile(`^IMP-F[1-5]-\d{2}$`)
+var idPattern = regexp.MustCompile(`^IMP-(?:F[1-6]|E)-\d{2}$`)
+
+func isWordByte(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
+}
+
+func compileDisallowedTermRegex(term string) (*regexp.Regexp, error) {
+	term = strings.TrimSpace(term)
+	if term == "" {
+		return nil, fmt.Errorf("empty term")
+	}
+	prefix := ""
+	if isWordByte(term[0]) {
+		prefix = `\b`
+	}
+	suffix := ""
+	if isWordByte(term[len(term)-1]) {
+		suffix = `\b`
+	}
+	return regexp.Compile(`(?i)` + prefix + regexp.QuoteMeta(term) + suffix)
+}
 
 // ValidateAndExport enforces Gate 1 (Portability), Gate 2 (Non-Trivial Fork), and Graduation Bar,
 // then exports the sanitized quote-free `<instance>/imprint.json`.
@@ -120,10 +145,12 @@ func ValidateAndExport(instanceDir string) error {
 	}
 
 	var termPatterns []*regexp.Regexp
+	var activeTerms []string
 	for _, t := range cfg.WorkspaceTermsDisallowedInPortableRules {
-		re, err := regexp.Compile(`(?i)\b` + regexp.QuoteMeta(t) + `\b`)
+		re, err := compileDisallowedTermRegex(t)
 		if err == nil {
 			termPatterns = append(termPatterns, re)
+			activeTerms = append(activeTerms, t)
 		}
 	}
 
@@ -133,7 +160,7 @@ func ValidateAndExport(instanceDir string) error {
 
 	for _, c := range claims {
 		if !idPattern.MatchString(c.ID) {
-			errs = append(errs, fmt.Sprintf("%s: id does not match ^IMP-F[1-5]-\\d{2}$", c.ID))
+			errs = append(errs, fmt.Sprintf("%s: id does not match ^IMP-(?:F[1-6]|E)-\\d{2}$", c.ID))
 		}
 		if !validFacets[c.Facet] {
 			errs = append(errs, fmt.Sprintf("%s: invalid facet %q", c.ID, c.Facet))
@@ -153,7 +180,7 @@ func ValidateAndExport(instanceDir string) error {
 		for idx, re := range termPatterns {
 			if re.MatchString(blob) {
 				errs = append(errs, fmt.Sprintf("%s: Gate 1 (Portability) failed: workspace term %q leaked into portable fields",
-					c.ID, cfg.WorkspaceTermsDisallowedInPortableRules[idx]))
+					c.ID, activeTerms[idx]))
 			}
 		}
 		if len(strings.TrimSpace(c.AdmissionTests.PortabilityCheck)) < 25 {
@@ -184,15 +211,17 @@ func ValidateAndExport(instanceDir string) error {
 		}
 
 		sanitized = append(sanitized, PublicClaim{
-			ID:             c.ID,
-			Facet:          c.Facet,
-			Scope:          c.Scope,
-			Status:         c.Status,
-			Title:          c.Title,
-			PortableRule:   c.PortableRule,
-			AdmissionTests: c.AdmissionTests,
-			AppliesWhen:    c.AppliesWhen,
-			FlipsWhen:      c.FlipsWhen,
+			ID:              c.ID,
+			Facet:           c.Facet,
+			Dimension:       c.Dimension,
+			Scope:           c.Scope,
+			Status:          c.Status,
+			HabitReflection: c.HabitReflection,
+			Title:           c.Title,
+			PortableRule:    c.PortableRule,
+			AdmissionTests:  c.AdmissionTests,
+			AppliesWhen:     c.AppliesWhen,
+			FlipsWhen:       c.FlipsWhen,
 			ProvenanceCounts: ProvenanceCounts{
 				EvidenceItems:        len(c.Evidence),
 				DistinctSourceTypes:  len(srcTypes),

@@ -8,6 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const DefaultInstanceDir = "~/.imprint"
+
 type OwnerConfig struct {
 	ID          string `yaml:"id"`
 	Name        string `yaml:"name"`
@@ -29,6 +31,7 @@ type ConfluencePageRef struct {
 }
 
 type AuthoredArtifactsConfig struct {
+	PreAIGlobs      []string            `yaml:"pre_ai_globs,omitempty"`
 	Globs           []string            `yaml:"globs,omitempty"`
 	ConfluencePages []ConfluencePageRef `yaml:"confluence_pages,omitempty"`
 }
@@ -74,15 +77,34 @@ func ExpandPath(p string) string {
 	return p
 }
 
+func ToTildePath(p string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return p
+	}
+	abs, err := filepath.Abs(ExpandPath(p))
+	if err != nil {
+		return p
+	}
+	if abs == home {
+		return "~"
+	}
+	prefix := home + string(filepath.Separator)
+	if strings.HasPrefix(abs, prefix) {
+		return "~/" + filepath.ToSlash(abs[len(prefix):])
+	}
+	return abs
+}
+
 func ResolveInstancePaths(instanceDir string) (absInstance string, localDir string, err error) {
+	if strings.TrimSpace(instanceDir) == "" {
+		instanceDir = DefaultInstanceDir
+	}
 	absInstance, err = filepath.Abs(ExpandPath(instanceDir))
 	if err != nil {
 		return "", "", err
 	}
 	localCandidate := filepath.Join(absInstance, ".local")
-	if info, statErr := os.Stat(localCandidate); statErr == nil && info.IsDir() {
-		return absInstance, localCandidate, nil
-	}
 	return absInstance, localCandidate, nil
 }
 
