@@ -147,6 +147,7 @@ Future work is organized into three capability tracks:
 
 - [`SKILL.md`](./SKILL.md): Agent skill for building, refreshing, and reviewing an imprint in `~/.imprint`.
 - [`AGENTS.md`](./AGENTS.md): Operating instructions and non-negotiable invariants for agents working in this repo.
+- [`adrs/`](./adrs): Architecture Decision Records (`ADR-0001` through `ADR-0004`) defining the boundary between Imprint, Context, and Episodic Memory, and modeling Habits as situational reflexes.
 - [`cmd/imprint/`](./cmd/imprint) & [`internal/`](./internal): Deterministic Go CLI packages (`config`, `collector`, `ingest`, `corpus`, `digest`, `gate`, `eval`, `link`, `review`, `brief`).
 - [`schemas/`](./schemas): JSON Schemas for local evidence claims (`claim.schema.json`) and exported quote-free imprints (`imprint.schema.json`).
 - [`docs/`](./docs): Method and architecture specifications (`01-sources.md` through `06-architecture-spec.md`).

@@ -20,7 +20,7 @@ func TestClassifyModesAndBuildBrief(t *testing.T) {
 		t.Fatalf("expected visual-html-and-prototypes mode, got %+v", modesHTML)
 	}
 
-	// 3. BuildBrief end-to-end assembly with project memories
+	// 3. BuildBrief end-to-end assembly with workspace bindings
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, "overlays"), 0o755); err != nil {
 		t.Fatal(err)
@@ -30,16 +30,7 @@ func TestClassifyModesAndBuildBrief(t *testing.T) {
 	}
 	_ = os.WriteFile(filepath.Join(tmp, "IMPRINT.md"), []byte("# Core Imprint\nFind the primitive first.\n"), 0o644)
 	_ = os.WriteFile(filepath.Join(tmp, "overlays", "mode-architecture-and-specs.md"), []byte("# Spec Mode\nProgressive depth.\n"), 0o644)
-	_ = os.WriteFile(filepath.Join(tmp, ".local", "memories.json"), []byte(`[
-  {
-    "id": "MEM-01",
-    "project": "project_alpha",
-    "type": "warning",
-    "dimension": "voice.prose_cadence",
-    "trigger": "Editing docs",
-    "rule": "Never introduce em-dashes in markdown specs."
-  }
-]`), 0o644)
+	_ = os.WriteFile(filepath.Join(tmp, ".local", "WORKSPACE.md"), []byte("# Workspace Bindings\nUse HQL.\n"), 0o644)
 
 	projDir := filepath.Join(tmp, "project_alpha")
 	_ = os.MkdirAll(projDir, 0o755)
@@ -51,10 +42,7 @@ func TestClassifyModesAndBuildBrief(t *testing.T) {
 	if len(res.MatchedModes) != 1 || res.MatchedModes[0] != "architecture-and-specs" {
 		t.Fatalf("unexpected MatchedModes: %v", res.MatchedModes)
 	}
-	if res.MatchedMemories != 1 {
-		t.Fatalf("expected 1 matched project memory, got %d", res.MatchedMemories)
-	}
-	if !strings.Contains(res.Markdown, "# Spec Mode") || !strings.Contains(res.Markdown, "MEM-01") {
+	if !strings.Contains(res.Markdown, "# Spec Mode") || !strings.Contains(res.Markdown, "# Workspace Bindings") {
 		t.Fatalf("unexpected brief markdown:\n%s", res.Markdown)
 	}
 }

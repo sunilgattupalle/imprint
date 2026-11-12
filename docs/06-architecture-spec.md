@@ -86,27 +86,14 @@ Relying only on what a user types in prompts misses what they do when they edit 
 
 ---
 
-## 4. Episodic Project Memory & Habit Reflection
+## 4. Separation of Imprint from Episodic Memory (`ADR-0001` & `ADR-0002`)
 
-### Project Memory Ledger (`.local/memories.json` + `recall_entries` Bridge)
-While `.local/WORKSPACE.md` holds static workspace bindings, `.local/memories.json` stores structured episodic project memories (seeded from `recall_entries` in `sessions.db` where `status = 'accepted'` and from agent synthesis):
-
-```json
-[
-  {
-    "id": "MEM-01",
-    "project": "imprint",
-    "type": "decision",
-    "dimension": "epistemic.single_source_of_truth",
-    "trigger": "Modifying schemas or CLI flags",
-    "rule": "Keep cmd/imprint and internal/* strictly deterministic and offline; never add LLM API calls inside the Go binary.",
-    "source_sessions": ["claude:7100df1b"]
-  }
-]
-```
+Per [`adrs/0001-imprint-vs-context-and-episodic-memory.md`](../adrs/0001-imprint-vs-context-and-episodic-memory.md) and [`adrs/0002-habits-of-mind-vs-mechanical-linters.md`](../adrs/0002-habits-of-mind-vs-mechanical-linters.md), `imprint` never stores project-level episodic facts (`memories.json` or `recall_entries`). Instead:
+1. **Episodic Memory $\xrightarrow{\text{distills}}$ Imprint:** `imprint` reads raw episodes from `sessions.db`, strips project-specific nouns, and graduates cross-project human invariants into `imprint.json`. Once graduated, the habit replaces the historical episodes.
+2. **Imprint $\xrightarrow{\text{conditions}}$ Episodic Memory:** External episodic memory systems (`agentsview recall`) read `imprint.json` as their salience prior so the memories they extract reflect what the person cares about.
 
 ### Habit Reflection CLI (`imprint review`)
-- `imprint review`: Displays a table of all L1 claims (`id`, `facet`, `dimension`, `habit_reflection`, `provenance_counts`, `title`) and L2 project memories.
+- `imprint review`: Displays a table of all graduated L1 habits (`id`, `facet`, `habit_reflection`, `evidence`, `title`).
 - `imprint review --set <claim_id>=<observed_keep|aspirational_shift>`: Updates `habit_reflection` in `.local/evidence_ledger.json` and re-runs `ValidateAndExport` so `imprint.json` stays in sync.
 
 ---

@@ -1,7 +1,6 @@
 package brief
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/sunilgattupalle/imprint/internal/config"
-	"github.com/sunilgattupalle/imprint/internal/corpus"
-	"github.com/sunilgattupalle/imprint/internal/review"
 )
 
 type ModeRule struct {
@@ -54,12 +51,11 @@ var modeRules = []ModeRule{
 }
 
 type BriefResult struct {
-	InstanceDir     string   `json:"instance_dir"`
-	Project         string   `json:"project"`
-	MatchedModes    []string `json:"matched_modes"`
-	IncludedFiles   []string `json:"included_files"`
-	MatchedMemories int      `json:"matched_memories"`
-	Markdown        string   `json:"markdown"`
+	InstanceDir   string   `json:"instance_dir"`
+	Project       string   `json:"project"`
+	MatchedModes  []string `json:"matched_modes"`
+	IncludedFiles []string `json:"included_files"`
+	Markdown      string   `json:"markdown"`
 }
 
 // ClassifyModes deterministically selects up to 2 mode overlays matching the prompt and target files.
@@ -153,34 +149,11 @@ func BuildBrief(instanceDir, cwd, prompt string, files []string) (*BriefResult, 
 		included = append(included, config.ToTildePath(wsPath))
 	}
 
-	memories, _ := review.LoadProjectMemories(localDir)
-	_, _, recalls := corpus.ExtractBehavioralSignals(instanceDir)
-
-	var matchedMemLines []string
-	for _, m := range memories {
-		if m.Project == "" || m.Project == "*" || strings.EqualFold(m.Project, proj) {
-			matchedMemLines = append(matchedMemLines, fmt.Sprintf("- **[%s | %s]** (*%s*): %s", m.ID, m.Dimension, m.Trigger, m.Rule))
-		}
-	}
-	for _, r := range recalls {
-		if r.Scope == "global" || strings.EqualFold(r.Project, proj) {
-			matchedMemLines = append(matchedMemLines, fmt.Sprintf("- **[recall:%s | %s]** **%s**: %s", r.ID, r.Type, r.Title, r.Body))
-		}
-	}
-	if len(matchedMemLines) > 0 {
-		md.WriteString("---\n\n")
-		md.WriteString(fmt.Sprintf("## Active Project Episodic Memories (`%s`)\n\n", proj))
-		for _, line := range matchedMemLines {
-			md.WriteString(line + "\n")
-		}
-	}
-
 	return &BriefResult{
-		InstanceDir:     config.ToTildePath(absInstance),
-		Project:         proj,
-		MatchedModes:    modeIDs,
-		IncludedFiles:   included,
-		MatchedMemories: len(matchedMemLines),
-		Markdown:        strings.TrimSpace(md.String()) + "\n",
+		InstanceDir:   config.ToTildePath(absInstance),
+		Project:       proj,
+		MatchedModes:  modeIDs,
+		IncludedFiles: included,
+		Markdown:      strings.TrimSpace(md.String()) + "\n",
 	}, nil
 }
