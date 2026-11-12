@@ -66,7 +66,96 @@ func scanNativeStores() map[string]nativeSession {
 		})
 	}
 
+	// Legacy Auggie v1 JSON sessions (~/.augment/sessions/*.json)
+	legacyAuggieDir := config.ExpandPath("~/.augment/sessions")
+	if info, err := os.Stat(legacyAuggieDir); err == nil && info.IsDir() {
+		matches, _ := filepath.Glob(filepath.Join(legacyAuggieDir, "*.json"))
+		for _, path := range matches {
+			ns, ok := parseAuggieLegacyJSONFile(path)
+			if !ok || len(ns.messages) == 0 {
+				continue
+			}
+			if prev, exists := out[ns.row.rawUUID]; !exists || len(ns.messages) > len(prev.messages) {
+				out[ns.row.rawUUID] = ns
+			}
+		}
+	}
+
 	return out
+}
+
+func parseAuggieLegacyJSONFile(path string) (nativeSession, bool) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nativeSession{}, false
+	}
+	var payload struct {
+		SessionID string `json:"sessionId"`
+		Created   string `json:"created"`
+		Modified  string `json:"modified"`
+		History   []struct {
+			FinishedAt       string `json:"finishedAt"`
+			IsHistorySummary bool   `json:"isHistorySummary"`
+			Exchange         struct {
+				RequestMessage string `json:"request_message"`
+				ResponseText   string `json:"response_text"`
+			} `json:"exchange"`
+		} `json:"chatHistory"`
+	}
+	if err := json.Unmarshal(b, &payload); err != nil {
+		return nativeSession{}, false
+	}
+	sid := strings.TrimSpace(payload.SessionID)
+	if sid == "" {
+		sid = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	}
+	var msgs []msgRow
+	ordinal := 0
+	for _, h := range payload.History {
+		if h.IsHistorySummary {
+			continue
+		}
+		ts := h.FinishedAt
+		if ts == "" {
+			ts = payload.Created
+		}
+		req := strings.TrimSpace(h.Exchange.RequestMessage)
+		if req != "" {
+			msgs = append(msgs, msgRow{
+				ordinal:   ordinal,
+				role:      "user",
+				content:   req,
+				timestamp: ts,
+			})
+			ordinal++
+		}
+		resp := strings.TrimSpace(h.Exchange.ResponseText)
+		if resp != "" {
+			msgs = append(msgs, msgRow{
+				ordinal:   ordinal,
+				role:      "assistant",
+				content:   resp,
+				timestamp: ts,
+			})
+			ordinal++
+		}
+	}
+	if len(msgs) == 0 {
+		return nativeSession{}, false
+	}
+	return nativeSession{
+		row: sessionRow{
+			id:             "auggie:" + sid,
+			rawUUID:        sid,
+			project:        "auggie_legacy",
+			agent:          "auggie",
+			effectiveAgent: "auggie",
+			startedAt:      payload.Created,
+			messageCount:   len(msgs),
+			cwd:            filepath.Dir(path),
+		},
+		messages: msgs,
+	}, true
 }
 
 func parsePiFamilyFile(path string, agent string) (nativeSession, bool) {
