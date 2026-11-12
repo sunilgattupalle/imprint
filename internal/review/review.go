@@ -67,8 +67,8 @@ func RunReview(instanceDir string, setPairs []string) error {
 		}
 	}
 
-	fmt.Printf("L1 Portable Imprint Habits (%d):\n", len(claims))
-	fmt.Printf("%-10s | %-28s | %-18s | %-5s | %s\n", "ID", "FACET", "HABIT REFLECTION", "EVID", "TITLE")
+	fmt.Printf("L1 Portable Imprint Claims (%d):\n", len(claims))
+	fmt.Printf("%-10s | %-28s | %-18s | %-5s | %s\n", "ID", "FACET", "REFLECTION", "EVID", "TITLE")
 	fmt.Println(strings.Repeat("-", 105))
 	for _, c := range claims {
 		hr := c.HabitReflection

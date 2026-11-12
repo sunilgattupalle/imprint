@@ -92,8 +92,8 @@ Per [`adrs/0001-imprint-vs-context-and-episodic-memory.md`](../adrs/0001-imprint
 1. **Episodic Memory $\xrightarrow{\text{distills}}$ Imprint:** `imprint` reads raw episodes from `sessions.db`, strips project-specific nouns, and graduates cross-project human invariants into `imprint.json`. Once graduated, the habit replaces the historical episodes.
 2. **Imprint $\xrightarrow{\text{conditions}}$ Episodic Memory:** External episodic memory systems (`agentsview recall`) read `imprint.json` as their salience prior so the memories they extract reflect what the person cares about.
 
-### Habit Reflection CLI (`imprint review`)
-- `imprint review`: Displays a table of all graduated L1 habits (`id`, `facet`, `habit_reflection`, `evidence`, `title`).
+### Reflection CLI (`imprint review`)
+- `imprint review`: Displays a table of all graduated L1 claims (`id`, `facet`, `habit_reflection`, `evidence`, `title`) so the owner can separate deliberate judgment/taste (`observed_keep`) from involuntary routines they want to change (`aspirational_shift`).
 - `imprint review --set <claim_id>=<observed_keep|aspirational_shift>`: Updates `habit_reflection` in `.local/evidence_ledger.json` and re-runs `ValidateAndExport` so `imprint.json` stays in sync.
 
 ---
