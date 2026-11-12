@@ -116,7 +116,7 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	}
 	sort.Strings(preAIPaths)
 	if len(preAIPaths) > 0 {
-		md.WriteString("### 3A. Pre-AI / Pure-Human Voice Gold (`--pre-ai` — Highest Priority for F4 Voice & Thought Identity)\n\n")
+		md.WriteString("### 3A. Pre-AI / Pure-Human Voice Gold (`--pre-ai`: Highest Priority for F4 Voice & Thought Identity)\n\n")
 		for _, p := range preAIPaths {
 			if seenPath[p] {
 				continue

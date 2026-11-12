@@ -9,8 +9,8 @@ Use this skill when the user wants to build, refresh, or review their personal *
 
 ## Determinism Boundary
 
-- **The `imprint` Go CLI** handles all deterministic data-plane work: zero-config initialization of `~/.imprint`, native + `agentsview` session collection, cross-store UUID deduplication, stripping `<worker>`/`<*-events>` noise, `.docx`/`.pptx`/`.html`/`.md` text & CSS token extraction, diversity-sampled digest compilation (5 seeded facets + emergent correction clusters), Gate 1 & Gate 2 validation, 20% holdout evaluation, and automatic harness linking (`imprint link`).
-- **You (the Agent)** handle source curation with the user, fetching remote authored pages via MCP (Confluence/Notion/GitHub), synthesizing the portable claims + emergent dimensions, guiding the user's **Habit Reflection** check, and compiling `IMPRINT.md` + `overlays/`.
+- **The `imprint` Go CLI** handles all deterministic data-plane work: initializing `~/.imprint`, scanning local session stores (Claude, Cursor IDE/CLI, Pi, OMP, Auggie, OpenCode, Devin) alongside `~/.agentsview/sessions.db`, deduplicating cross-store session UUIDs, stripping `<worker>`/`<*-events>` noise, extracting text and CSS tokens from `.docx`/`.pptx`/`.html`/`.md`, compiling the diversity-sampled digest (`F1`–`F5` seeded facets + `FX` emergent corrections), enforcing Gate 1 & Gate 2, scoring the 20% holdout split, and linking agent harnesses (`imprint link`).
+- **You (the Agent)** handle source curation with the user, fetching remote authored pages via MCP (Confluence/Notion/GitHub), synthesizing portable claims and emergent dimensions, running the **Habit Reflection** check with the user, and writing `IMPRINT.md` + `overlays/`.
 
 ---
 
@@ -18,7 +18,7 @@ Use this skill when the user wants to build, refresh, or review their personal *
 
 ### Step 1: Register Pre-AI Writings (`S2A`), Authored Artifacts (`S2B`), & Disallowed Workspace Terms
 Ask the user once:
-1. *"Do you have 1–3 writings written before AI tools (or purely by hand) that best represent your natural voice, plus any recent specs, decks (`.pptx`/`.html`), or Confluence/Notion URLs?"*
+1. *"Do you have 1–3 pieces written before AI tools (or written purely by hand) that best represent your natural voice, plus any recent specs, decks (`.pptx`/`.html`), or Confluence/Notion URLs?"*
 2. *"What company, product, or internal repo names should be stripped from your portable imprint and kept in `.local/WORKSPACE.md`?"*
 
 - Ensure `~/.imprint` exists (`imprint init` with no arguments).
@@ -38,9 +38,9 @@ Run one command:
 ```bash
 imprint sync
 ```
-This syncs local coding-agent sessions (Claude, Cursor IDE/CLI, Pi, OMP, Auggie, OpenCode, Devin), deduplicates by session UUID, strips non-human `role=user` turns, splits sessions 80/20 into `train_turns.jsonl` and `holdout_turns.jsonl`, and writes **`~/.imprint/.local/corpus/digest.md`** containing:
+This syncs local coding-agent sessions, deduplicates by session UUID, strips non-human `role=user` turns, splits sessions 80/20 into `train_turns.jsonl` and `holdout_turns.jsonl`, and writes **`~/.imprint/.local/corpus/digest.md`** containing:
 - `S1`: Diversity-balanced training turns with assistant trigger context across the 5 seeded facets (`F1`–`F5`) plus **`FX: Emergent / Unclustered Corrections & Directives`**
-- `S2A` (`[PRE-AI GOLD]`) & `S2B`: Stratified text and CSS tokens from `.md`, `.txt`, `.docx`, `.pptx`, and `.html` artifacts
+- `S2A` (`[PRE-AI GOLD]`) & `S2B`: Stratified head+tail text and CSS tokens from `.md`, `.txt`, `.docx`, `.pptx`, and `.html` artifacts
 - `S3`: Auto-discovered explicit style and operating priors
 
 ### Step 3: Synthesize L1 Portable Claims, Emergent Dimensions & Situational Overlays
@@ -56,12 +56,12 @@ Read `~/.imprint/.local/corpus/digest.md` and write:
    - `dimension`: Specific seeded or emergent dimension ID (e.g. `epistemic.abstraction_depth`, `dialectic.plan_before_code`, `emergent.functional_purity`).
    - **Gate 1 (`portability_check`):** zero company/workspace proper nouns in `title`, `portable_rule`, `applies_when`, or `flips_when` (put company bindings in `workspace_bindings`).
    - **Gate 2 (`peer_fork`):** state what a strong peer engineer would legitimately prefer instead.
-   - **Situational Activation (`applies_when` & `flips_when`):** state when this dimension activates and the exact boundary condition where the user intentionally inverts it (e.g., when they say *"go fast"* vs. *"go slow and align first"*).
+   - **Situational Activation (`applies_when` & `flips_when`):** state when this dimension activates and the exact boundary condition where the user intentionally inverts it (for example, when they say *"go fast"* vs. *"go slow and align first"*).
 2. `~/.imprint/.local/demoted_non_imprint.json` & `~/.imprint/.local/WORKSPACE.md`: Separated **L2 Workspace Bindings** and **L3 Agent Baseline** rules.
 3. `~/.imprint/IMPRINT.md` (~500–650 tokens, including a situational activation router for `overlays/mode-*.md`) and `~/.imprint/overlays/mode-*.md`.
 
 ### Step 4: Habit Reflection Check (Observed Self vs. Aspirational Shift)
-Briefly show the user the discovered dimensions and ask:
+Habits in session logs are often automatic rather than deliberate. Show the user the discovered dimensions and ask:
 - *"Are there any observed habits here you want to keep as-is (`observed_keep`) vs. intentionally adjust or invert (`aspirational_shift`)?"*
 Record `"habit_reflection": "observed_keep"` or `"aspirational_shift"` on each claim in `.local/evidence_ledger.json`.
 

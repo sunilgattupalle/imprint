@@ -1,6 +1,6 @@
-# 03: The Five Imprint Facets & Two Admission Gates
+# 03: Seeded Facets, Emergent Dimensions & Admission Gates
 
-To prevent a personal imprint from turning into a dumping ground of company trivia or generic "don't write bugs" rules, every claim must pass **two admission gates** and map to **one of five portable facets**.
+To prevent a personal imprint from turning into a dumping ground of company trivia or generic "don't write bugs" rules, every claim must pass **two admission gates**, map to a **seeded or emergent dimension**, and record its **habit reflection** status.
 
 ---
 
@@ -24,6 +24,8 @@ To prevent a personal imprint from turning into a dumping ground of company triv
 
 ## 2. Five Seeded Facets + Emergent Dimensions (`F6_emergent`)
 
+A builder's behavior is multi-dimensional: in a given situation, two or three dimensions activate together. `imprint` seeds extraction with five facets (`F1`–`F5`) while surfacing unclustered corrections (`FX` in `digest.md`) so recurring habits outside the seed list graduate under `F6_emergent`:
+
 | Facet | Seeded Dimensions | What it captures |
 |---|---|---|
 | **`F1_epistemic_posture`** | `epistemic.abstraction_depth`, `epistemic.single_source_of_truth`, `epistemic.verification_bar`, `epistemic.unit_economics` | How the person decides what is true, well-abstracted, and properly evaluated (computational primitives first, single source of truth, explicit epistemic status, rubric-before-benchmark, conservation-law unit economics). |
@@ -37,14 +39,14 @@ To prevent a personal imprint from turning into a dumping ground of company triv
 
 ## 3. Habit Reflection (`observed_keep` vs. `aspirational_shift`)
 
-Because habits are often automatic rather than deliberate, each claim supports a `habit_reflection` status:
+Because habits form involuntarily, observing a pattern in historical transcripts does not mean the person wants to perpetuate it forever. Each claim records `habit_reflection`:
 - `observed_keep`: Confirmed by the owner as their authentic, intended working style.
 - `aspirational_shift`: An observed pattern that the owner intentionally chooses to modify or invert going forward.
 
 ---
 
-## 3. Scope Hierarchy (`global` and `mode:*`)
+## 4. Scope Hierarchy (`global` and `mode:*`)
 
 Because company/repo rules are separated into `.local/WORKSPACE.md`, an L1 Imprint claim has two valid scopes:
-1. `global`: Compiled into `<instance>/IMPRINT.md` (~500–650 tokens total).
-2. `mode:<task_type>`: Compiled into `<instance>/overlays/mode-<task_type>.md` (`mode:architecture-and-specs`, `mode:exec-memos-and-decks`, `mode:visual-html-and-prototypes`, `mode:coding-and-prs`, `mode:autonomous-orchestration`).
+1. `global`: Compiled into `~/.imprint/IMPRINT.md` (~500–650 tokens total).
+2. `mode:<task_type>`: Compiled into `~/.imprint/overlays/mode-<task_type>.md` (`mode:architecture-and-specs`, `mode:exec-memos-and-decks`, `mode:visual-html-and-prototypes`, `mode:coding-and-prs`, `mode:autonomous-orchestration`).

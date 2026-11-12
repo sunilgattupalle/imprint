@@ -4,12 +4,11 @@ An imprint is useful only if it **reduces corrective turns in unseen sessions** 
 
 ---
 
-## 1. Held-Out Intervention Coverage (`imprint eval <instance>`)
-Using the untouched 20% holdout split (`.local/corpus/holdout_turns.jsonl`):
-1. Extract human corrective and directive turns from `holdout_turns.jsonl` (excluding raw JSON/log pastes).
+## 1. Held-Out Intervention Coverage (`imprint eval`)
+Using the untouched 20% holdout split (`~/.imprint/.local/corpus/holdout_turns.jsonl`):
+1. Extract imprint-eligible directive and corrective turns from `holdout_turns.jsonl` (excluding raw JSON/log pastes and routine code-typo fixes).
 2. Score what percentage of held-out interventions are anticipated by **L1 Portable Imprint claims** (`evidence_ledger.json` -> `imprint.json`), and report **L2 Workspace** / **L3 Agent Baseline** matches separately.
 3. Write `.local/eval/holdout_report.md` and `.local/eval/holdout_results.json`.
-4. **Target bar:** ≥ 70% of held-out epistemic, structural, stylistic, and delegation interventions covered by L1 portable claims.
 
 ---
 
@@ -22,13 +21,14 @@ Select 3 prompts from `holdout` (1 architecture spec, 1 executive summary / visu
 ---
 
 ## 3. Maintenance Loop
+All commands default to `~/.imprint`:
 ```bash
-# Refresh deduplicated corpus and digest after new sessions accumulate
-imprint digest <instance_dir>
+# Refresh deduplicated corpus, regenerate digest.md, and ensure harnesses are linked
+imprint sync
 
-# Re-validate gates and re-export quote-free imprint.json after editing claims
-imprint validate <instance_dir>
+# Re-validate gates, export quote-free imprint.json, and update harness links after editing claims
+imprint validate
 
 # Re-run held-out coverage check
-imprint eval <instance_dir>
+imprint eval
 ```
