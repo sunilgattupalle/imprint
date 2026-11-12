@@ -109,9 +109,16 @@ imprint add \
 # 3. Your agent (via SKILL.md) synthesizes claims, runs the Habit Reflection check with you, and writes:
 #    .local/evidence_ledger.json, .local/WORKSPACE.md, IMPRINT.md, and overlays/
 
-# 4. Validate Gate 1 & Gate 2, export quote-free imprint.json, auto-link harnesses, and score holdout
+# 4. Inspect & update Habit Reflection (observed_keep vs. aspirational_shift)
+imprint review
+imprint review --set IMP-F1-01=observed_keep
+
+# 5. Validate Gate 1 & Gate 2, export quote-free imprint.json, auto-link harnesses, and score holdout
 imprint validate
 imprint eval
+
+# 6. Compile a situational operating brief for a specific prompt and working directory
+imprint brief --cwd . --prompt "write the architecture spec" --files "README.md"
 ```
 
 ### How It Wires Into Your Tools
@@ -140,6 +147,6 @@ Future work is organized into three capability tracks:
 
 - [`SKILL.md`](./SKILL.md): Agent skill for building, refreshing, and reviewing an imprint in `~/.imprint`.
 - [`AGENTS.md`](./AGENTS.md): Operating instructions and non-negotiable invariants for agents working in this repo.
-- [`cmd/imprint/`](./cmd/imprint) & [`internal/`](./internal): Deterministic Go CLI packages (`config`, `collector`, `ingest`, `corpus`, `digest`, `gate`, `eval`, `link`).
+- [`cmd/imprint/`](./cmd/imprint) & [`internal/`](./internal): Deterministic Go CLI packages (`config`, `collector`, `ingest`, `corpus`, `digest`, `gate`, `eval`, `link`, `review`, `brief`).
 - [`schemas/`](./schemas): JSON Schemas for local evidence claims (`claim.schema.json`) and exported quote-free imprints (`imprint.schema.json`).
-- [`docs/`](./docs): Method specifications (`01-sources.md` through `05-evaluation.md`).
+- [`docs/`](./docs): Method and architecture specifications (`01-sources.md` through `06-architecture-spec.md`).

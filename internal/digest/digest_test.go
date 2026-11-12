@@ -41,6 +41,17 @@ func TestDiversifyTurnsAndEmergentClustering(t *testing.T) {
 	if !strings.Contains(clipped, "HEAD_MARKER") || !strings.Contains(clipped, "TAIL_MARKER") {
 		t.Fatalf("expected stratified clip to preserve both head and tail, got: %q", clipped)
 	}
+
+	// Verify ExtractVersionDiffs detects -v1 -> -v2 deltas
+	tmp := t.TempDir()
+	v1 := filepath.Join(tmp, "spec-v1.md")
+	v2 := filepath.Join(tmp, "spec-v2.md")
+	_ = os.WriteFile(v1, []byte("# Old Heading\nThis draft — has em-dashes — and extra filler text.\n"), 0o644)
+	_ = os.WriteFile(v2, []byte("# New Heading\nThis draft states the primitive directly.\n"), 0o644)
+	diffs := ExtractVersionDiffs([]string{v1, v2})
+	if len(diffs) != 1 || diffs[0].BeforeEmDashes != 2 || diffs[0].AfterEmDashes != 0 {
+		t.Fatalf("unexpected version diff result: %+v", diffs)
+	}
 }
 
 func TestBuildDigestWithPreAIAndNativeSession(t *testing.T) {

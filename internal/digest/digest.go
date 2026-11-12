@@ -215,6 +215,94 @@ func BuildDigest(instanceDir string) (string, *corpus.CorpusStats, error) {
 	writeTurnBullets(&md, emergentSample)
 	md.WriteString("\n")
 
+	// 5. Multi-Signal Behavioral Evidence (Trajectory Pushbacks, Friction Findings & Version Diffs)
+	frictions, trajectories, recalls := corpus.ExtractBehavioralSignals(instanceDir)
+	allDocPaths := append(append([]string{}, preAIPaths...), authoredPaths...)
+	versionDiffs := ExtractVersionDiffs(allDocPaths)
+
+	if len(trajectories) > 0 || len(frictions) > 0 || len(versionDiffs) > 0 || len(recalls) > 0 {
+		md.WriteString("## 5. Non-Verbal & Multi-Signal Behavioral Evidence\n\n")
+
+		if len(trajectories) > 0 {
+			md.WriteString(fmt.Sprintf("### 5A. Tool-Call Trajectory Pushbacks (`S1-Trajectory`, %d events)\n", len(trajectories)))
+			md.WriteString("- **What this shows:** Turns where the assistant invoked `write`/`edit` and the user immediately stepped in to stop, redirect, or enforce design alignment first.\n\n")
+			limit := 15
+			if len(trajectories) < limit {
+				limit = len(trajectories)
+			}
+			for i := 0; i < limit; i++ {
+				tr := trajectories[i]
+				date := tr.Timestamp
+				if len(date) >= 10 {
+					date = date[:10]
+				}
+				oneLine := strings.ReplaceAll(tr.UserReaction, "\n", " ")
+				target := tr.ToolName
+				if tr.FilePath != "" {
+					target += " -> " + filepath.Base(tr.FilePath)
+				}
+				md.WriteString(fmt.Sprintf("- `[%s | %s | %s | #%d]` (%s) after `%s`: %q\n",
+					date, tr.Agent, tr.Project, tr.Ordinal, tr.SessionID, target, oneLine))
+			}
+			md.WriteString("\n")
+		}
+
+		if len(versionDiffs) > 0 {
+			md.WriteString(fmt.Sprintf("### 5B. Versioned Document Revision Diffs (`S2-Diff`, %d pairs)\n", len(versionDiffs)))
+			md.WriteString("- **What this shows:** Concrete structural, word-count, and punctuation deltas across sequential `-v1` -> `-v2` drafts.\n\n")
+			for _, d := range versionDiffs {
+				md.WriteString(fmt.Sprintf("#### `%s` -> `%s` (words: %d -> %d, em-dashes: %d -> %d)\n",
+					d.FromFile, d.ToFile, d.BeforeWords, d.AfterWords, d.BeforeEmDashes, d.AfterEmDashes))
+				for _, h := range d.RemovedHeadings {
+					md.WriteString(fmt.Sprintf("- *Removed heading:* `%s`\n", h))
+				}
+				for _, h := range d.AddedHeadings {
+					md.WriteString(fmt.Sprintf("- *Added heading:* `%s`\n", h))
+				}
+				for _, r := range d.SampleRemoved {
+					md.WriteString(fmt.Sprintf("- *Cut line:* %q\n", r))
+				}
+				for _, a := range d.SampleAdded {
+					md.WriteString(fmt.Sprintf("- *Added line:* %q\n", a))
+				}
+				md.WriteString("\n")
+			}
+		}
+
+		if len(frictions) > 0 {
+			md.WriteString(fmt.Sprintf("### 5C. Indexed Friction Findings (`sessions.db`, %d events)\n\n", len(frictions)))
+			limit := 15
+			if len(frictions) < limit {
+				limit = len(frictions)
+			}
+			for i := 0; i < limit; i++ {
+				fr := frictions[i]
+				date := fr.OccurredAt
+				if len(date) >= 10 {
+					date = date[:10]
+				}
+				oneLine := strings.ReplaceAll(fr.Text, "\n", " ")
+				md.WriteString(fmt.Sprintf("- `[%s | %s | %s | %s]` (%s): %q\n",
+					date, fr.Agent, fr.Project, fr.Kind, fr.SessionID, oneLine))
+			}
+			md.WriteString("\n")
+		}
+
+		if len(recalls) > 0 {
+			md.WriteString(fmt.Sprintf("### 5D. Accepted Episodic Recall Entries (`sessions.db`, %d entries)\n\n", len(recalls)))
+			limit := 15
+			if len(recalls) < limit {
+				limit = len(recalls)
+			}
+			for i := 0; i < limit; i++ {
+				rc := recalls[i]
+				md.WriteString(fmt.Sprintf("- `[%s | scope=%s | project=%s | transferable=%v]` **%s**: %s\n",
+					rc.Type, rc.Scope, rc.Project, rc.Transferable, rc.Title, rc.Body))
+			}
+			md.WriteString("\n")
+		}
+	}
+
 	digestPath := filepath.Join(localDir, "corpus/digest.md")
 	if err := os.WriteFile(digestPath, []byte(md.String()), 0o644); err != nil {
 		return "", stats, err

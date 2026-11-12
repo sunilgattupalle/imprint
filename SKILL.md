@@ -61,14 +61,15 @@ Read `~/.imprint/.local/corpus/digest.md` and write:
 3. `~/.imprint/IMPRINT.md` (~500–650 tokens, including a situational activation router for `overlays/mode-*.md`) and `~/.imprint/overlays/mode-*.md`.
 
 ### Step 4: Habit Reflection Check (Observed Self vs. Aspirational Shift)
-Habits in session logs are often automatic rather than deliberate. Show the user the discovered dimensions and ask:
+Habits in session logs are often automatic rather than deliberate. Run `imprint review`, show the user the discovered dimensions, and ask:
 - *"Are there any observed habits here you want to keep as-is (`observed_keep`) vs. intentionally adjust or invert (`aspirational_shift`)?"*
-Record `"habit_reflection": "observed_keep"` or `"aspirational_shift"` on each claim in `.local/evidence_ledger.json`.
+Record the user's choices via `imprint review --set <CLAIM_ID>=observed_keep|aspirational_shift`.
 
 ### Step 5: Validate, Auto-Link Across All Harnesses & Evaluate Holdout
 ```bash
 imprint validate
 imprint eval
+imprint brief --cwd . --prompt "verify situational brief" --json
 ```
 - `imprint validate` enforces Gate 1 & Gate 2, exports quote-free `~/.imprint/imprint.json`, and **automatically links** `~/.imprint/IMPRINT.md` and `~/.imprint/.local/WORKSPACE.md` into Claude Code (`~/.claude/CLAUDE.md`), Pi (`~/.pi/agent/AGENTS.md`), Oh My Pi (`~/.omp/agent/AGENTS.md`), OpenCode (`~/.config/opencode/AGENTS.md`), and Hermes (`~/.hermes/SOUL.md`).
 - `imprint eval` tests the claims against the untouched 20% holdout sessions and writes `~/.imprint/.local/eval/holdout_report.md`.

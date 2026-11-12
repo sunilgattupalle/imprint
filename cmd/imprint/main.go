@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sunilgattupalle/imprint/internal/brief"
 	"github.com/sunilgattupalle/imprint/internal/collector"
 	"github.com/sunilgattupalle/imprint/internal/config"
 	"github.com/sunilgattupalle/imprint/internal/digest"
@@ -14,6 +15,7 @@ import (
 	"github.com/sunilgattupalle/imprint/internal/gate"
 	"github.com/sunilgattupalle/imprint/internal/ingest"
 	"github.com/sunilgattupalle/imprint/internal/link"
+	"github.com/sunilgattupalle/imprint/internal/review"
 )
 
 type multiFlag []string
@@ -29,6 +31,8 @@ func usage() {
 
 Usage:
   imprint sync     [instance_dir] [--owner-id <id>] [--owner-name <name>] [--link]
+  imprint brief    [instance_dir] [--cwd <dir>] [--prompt <text>] [--files <csv>] [--json]
+  imprint review   [instance_dir] [--set <CLAIM_ID>=observed_keep|aspirational_shift]
   imprint add      [instance_dir] [--pre-ai <glob/path>] [--authored <glob/path>] [--chats <glob/path>] [--prior <path>] [--disallow-term <term>]
   imprint link     [instance_dir] [--dry-run]
   imprint validate [instance_dir]
@@ -174,6 +178,39 @@ func main() {
 					fmt.Printf("  Linked [%s] %s (%s)\n", r.Harness, r.Path, r.Action)
 				}
 			}
+		}
+
+	case "brief":
+		fs := flag.NewFlagSet("brief", flag.ExitOnError)
+		cwd := fs.String("cwd", "", "Working directory to resolve active project (defaults to current directory)")
+		prompt := fs.String("prompt", "", "Active user prompt or task description for situational mode routing")
+		filesCSV := fs.String("files", "", "Comma-separated target file paths for situational mode routing")
+		asJSON := fs.Bool("json", false, "Output structured JSON instead of compiled Markdown")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		var files []string
+		if *filesCSV != "" {
+			files = strings.Split(*filesCSV, ",")
+		}
+		res, err := brief.BuildBrief(inst, *cwd, *prompt, files)
+		if err != nil {
+			fatal(err)
+		}
+		if *asJSON {
+			b, _ := json.MarshalIndent(res, "", "  ")
+			fmt.Println(string(b))
+		} else {
+			fmt.Print(res.Markdown)
+		}
+
+	case "review":
+		fs := flag.NewFlagSet("review", flag.ExitOnError)
+		var setPairs multiFlag
+		fs.Var(&setPairs, "set", "Set habit_reflection (<CLAIM_ID>=observed_keep|aspirational_shift|unreviewed)")
+		instanceFlag := fs.String("instance", "", "Instance directory path (defaults to ~/.imprint)")
+		inst := parseFlagsWithPositional(fs, os.Args[2:], instanceFlag)
+		if err := review.RunReview(inst, setPairs); err != nil {
+			fatal(err)
 		}
 
 	case "eval":
